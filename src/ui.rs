@@ -91,6 +91,13 @@ impl UserInterface {
         }
     }
 
+    pub fn get_selected(&self, app: &Application) -> String {
+        let entries = self.get_page(
+            &app.all_entries.as_ref().unwrap().get(&app.view).unwrap()
+        );
+        String::from(self.get_page(&entries).get(self.selected as usize).unwrap())
+    }
+
     fn display(&self, to_get: &str, value: u8) -> &str {
         match to_get {
             "view" => {

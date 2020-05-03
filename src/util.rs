@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use libc::{ioctl, TIOCSTI};
+
 
 pub fn modulo(a: i32, b: i32) -> i32 {
     ((a % b) + b) % b
@@ -23,6 +25,14 @@ pub fn sort(entries: &mut Vec<String>) -> Vec<String> {
     entries.dedup();
     entries.sort_by(|a, b| freq_map.get(b).unwrap().cmp(freq_map.get(a).unwrap()));
     entries.to_vec()
+}
+
+pub fn echo(command: String) {
+    unsafe {
+        for byte in command.as_bytes() {
+            ioctl(0, TIOCSTI, byte); 
+        }
+    }
 }
 
 fn frequency_map(entries: &Vec<String>) -> HashMap<String, usize> {

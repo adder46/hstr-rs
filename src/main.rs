@@ -18,16 +18,27 @@ fn main() {
         match user_input.unwrap() {
             WchResult::Char(ch) => {
                 match ch {
-                    5 => {
+                    5 => { // C-e
                         app.toggle_match(&mut user_interface);
                         user_interface.populate_screen(&app);
                     },
-                    20 => {
+                    9 => { // TAB
+                        let command = user_interface.get_selected(&app);
+                        util::echo(command);
+                        break;
+                    },
+                    10 => { // ENTER ("\n")
+                        let command = user_interface.get_selected(&app);
+                        util::echo(command);
+                        util::echo("\n".to_string());
+                        break;
+                    },
+                    20 => { // C-t
                         app.toggle_case();
                         user_interface.populate_screen(&app);
                     },
-                    27 => break,
-                    31 => {
+                    27 => break, // ESC
+                    31 => { // C-/
                         app.toggle_view(&mut user_interface);
                         user_interface.populate_screen(&app);
                     }

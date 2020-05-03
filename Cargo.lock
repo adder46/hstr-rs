@@ -10,6 +10,7 @@ checksum = "c3d87b23d6a92cd03af510a5ade527033f6aa6fa92161e2d5863a907d4c5e31d"
 name = "hstr-rs"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "ncurses",
 ]
 
