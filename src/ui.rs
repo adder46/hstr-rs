@@ -21,10 +21,10 @@ impl UserInterface {
     pub fn init_color_pairs(&self) {
         start_color();
         init_pair(1, COLOR_WHITE, COLOR_BLACK); // normal
-        init_pair(2, 15, COLOR_GREEN); // highlighted-green
-        init_pair(3, 0, 15); // highlighted-white
-        init_pair(4, 15, 0); // favorites
-        init_pair(5, COLOR_RED, 0); // red
+        init_pair(2, 15, COLOR_GREEN); // highlighted-green (selected item)
+        init_pair(3, 0, 15); // highlighted-white (status)
+        init_pair(4, 15, 0); // white (favorites)
+        init_pair(5, COLOR_RED, 0); // red (searched items)
     }
 
     pub fn populate_screen(&self, app: &Application) {
@@ -39,7 +39,11 @@ impl UserInterface {
                 for (substring_index, _substring) in substring_indexes.iter() {
                     for i in 0..app.search_string.len() {
                         attron(COLOR_PAIR(5) | A_BOLD());
-                        mvaddch(index as i32 + 3, (*substring_index + i + 1) as i32, app.search_string.chars().nth(i).unwrap() as u64);
+                        mvaddch(
+                            index as i32 + 3,
+                            (*substring_index + i + 1) as i32,
+                            app.search_string.chars().nth(i).unwrap() as u64
+                        );
                         attroff(COLOR_PAIR(5) | A_BOLD());    
                     }
                 }
@@ -128,13 +132,10 @@ impl UserInterface {
     }
 
     fn get_page(&self, all_entries: &Vec<String>) -> Vec<String> {
-        let all_entries = match all_entries
-            .chunks(LINES() as usize - 3)
-            .nth(self.page as usize - 1) { 
-                Some(val) => val.to_vec(),
-                None => Vec::new()
-            };
-        all_entries
+        match all_entries.chunks(LINES() as usize - 3).nth(self.page as usize - 1) { 
+            Some(val) => val.to_vec(),
+            None => Vec::new()
+        }
     }
 
     fn get_page_size(&self, all_entries: &Vec<String>) -> i32 {
