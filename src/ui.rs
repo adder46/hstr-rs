@@ -1,6 +1,6 @@
 use ncurses::*;
 use crate::app::Application;
-use crate::util::modulo;
+use crate::util::{modulo, get_shell_prompt};
 
 const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
@@ -72,7 +72,7 @@ impl UserInterface {
         attron(COLOR_PAIR(3));
         mvaddstr(2, 0, &format!("{1:0$}", COLS() as usize, status));
         attroff(COLOR_PAIR(3));
-        mvaddstr(0, 0, &app.search_string);
+        mvaddstr(0, 0, &format!("{}{}", get_shell_prompt(), app.search_string));
     }
 
     pub fn move_selected(&mut self, all_entries: &Vec<String>, direction: i32) {

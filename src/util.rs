@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use libc::{ioctl, TIOCSTI};
-
+use libc::{c_char, gethostname, ioctl, sysconf, TIOCSTI, _SC_HOST_NAME_MAX};
+use std::env;
 
 pub fn modulo(a: i32, b: i32) -> i32 {
     ((a % b) + b) % b
@@ -33,6 +33,20 @@ pub fn echo(command: String) {
             ioctl(0, TIOCSTI, byte); 
         }
     }
+}
+
+pub fn get_shell_prompt() -> String {
+    let hostname_max = unsafe { sysconf(_SC_HOST_NAME_MAX) };
+    let mut buffer = vec![0 as u8; (hostname_max as usize) + 1];
+    unsafe {
+        gethostname(buffer.as_mut_ptr() as *mut c_char, buffer.len());
+    }
+    let end = buffer
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or_else(|| buffer.len());
+    buffer.resize(end, 0);
+    format!("{}@{}$ ", env::var("USER").unwrap(), String::from_utf8(buffer).unwrap())
 }
 
 fn frequency_map(entries: &Vec<String>) -> HashMap<String, usize> {
