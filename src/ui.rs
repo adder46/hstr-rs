@@ -78,7 +78,7 @@ impl UserInterface {
     pub fn move_selected(&mut self, all_entries: &Vec<String>, direction: i32) {
         let page_size = self.get_page_size(all_entries);
         self.selected += direction;
-        self.selected = ((self.selected % page_size) + page_size) % page_size;
+        self.selected = modulo(self.selected, page_size);
         if direction == 1 {
             if self.selected == 0 {
                 self.turn_page(all_entries, 1);
