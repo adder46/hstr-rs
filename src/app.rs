@@ -57,11 +57,10 @@ impl Application {
                     .retain(|x| x.to_lowercase().contains(search_string));
             }
         } else {
-
+            // handle regex searching here
         }
         user_interface.populate_screen(&self);
     }
-
 
     pub fn toggle_case(&mut self) {
         self.case_sensitivity = (self.case_sensitivity + 1) % 2;

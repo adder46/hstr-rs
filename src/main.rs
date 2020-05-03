@@ -35,7 +35,7 @@ fn main() {
                         app.search_string += &std::char::from_u32(ch as u32).unwrap().to_string();
                         app.search(&mut user_interface);
                     },
-                };
+                }
             },
             WchResult::KeyCode(code) => {
                 match code {

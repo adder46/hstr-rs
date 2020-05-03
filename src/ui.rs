@@ -1,5 +1,6 @@
 use ncurses::*;
 use crate::app::Application;
+use crate::util::modulo;
 
 const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
@@ -9,39 +10,12 @@ pub struct UserInterface {
 }
 
 impl UserInterface {
+
     pub fn new() -> Self {
         Self {
             page: 1,
             selected: 0
          }
-    }
-
-    fn display(&self, to_get: &str, value: u8) -> &str {
-        match to_get {
-            "view" => {
-                match value {
-                    0 => "sorted",
-                    1 => "favorites",
-                    2 => "history",
-                    _ => "n/a"
-                }
-            },
-            "case" => {
-                match value {
-                    0 => "insensitive",
-                    1 => "sensitive",
-                    _ => "n/a"
-                }
-            },
-            "match" => {
-                match value {
-                    0 => "exact",
-                    1 => "regex",
-                    _ => "n/a"
-                }
-            },
-            _ => "n/a"
-        }
     }
 
     pub fn init_color_pairs(&self) {
@@ -50,11 +24,7 @@ impl UserInterface {
         init_pair(2, 15, COLOR_GREEN); // highlighted-green
         init_pair(3, 0, 15); // highlighted-white
         init_pair(4, 15, 0); // favorites
-        init_pair(5, COLOR_RED, 0); // favorites
-    }
-
-    fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<(usize, &'a str)> {
-        string.match_indices(substring).collect()
+        init_pair(5, COLOR_RED, 0); // red
     }
 
     pub fn populate_screen(&self, app: &Application) {
@@ -117,14 +87,40 @@ impl UserInterface {
         }
     }
 
+    fn display(&self, to_get: &str, value: u8) -> &str {
+        match to_get {
+            "view" => {
+                match value {
+                    0 => "sorted",
+                    1 => "favorites",
+                    2 => "history",
+                    _ => "n/a"
+                }
+            },
+            "case" => {
+                match value {
+                    0 => "insensitive",
+                    1 => "sensitive",
+                    _ => "n/a"
+                }
+            },
+            "match" => {
+                match value {
+                    0 => "exact",
+                    1 => "regex",
+                    _ => "n/a"
+                }
+            },
+            _ => "n/a"
+        }
+    }
+
+    fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<(usize, &'a str)> {
+        string.match_indices(substring).collect()
+    }
+
     fn turn_page(&mut self, all_entries: &Vec<String>, direction: i32) {
-        self.page = (
-            (
-                (
-                    (self.page - 1 + direction) % self.total_pages(all_entries)
-                ) + self.total_pages(all_entries)
-            ) % self.total_pages(all_entries)
-        ) + 1
+        self.page = modulo(self.page - 1 + direction, self.total_pages(all_entries)) + 1;
     }
 
     fn total_pages(&self, all_entries: &Vec<String>) -> i32 {
