@@ -1,6 +1,7 @@
 use ncurses::*;
 
 mod app;
+mod sort;
 mod ui;
 mod util;
 

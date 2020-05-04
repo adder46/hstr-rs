@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::util::{read, sort};
+use crate::sort::sort;
+use crate::util::read;
 use crate::ui::UserInterface;
 
 pub struct Application {
