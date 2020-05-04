@@ -4,8 +4,6 @@ Work in progress.
 
 ### FIXME
 
-- Implement delete from history
-- Implement add to favorites
 - Implement regex searching
 - Write tests
 - Write installation instructions
@@ -17,3 +15,5 @@ Work in progress.
 - Get shell prompt
 - Get history and favorites file location nicely
 - Handle non-existant files
+- Implement add to favorites
+- Implement delete from history

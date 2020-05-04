@@ -25,6 +25,7 @@ impl UserInterface {
         init_pair(3, 0, 15); // highlighted-white (status)
         init_pair(4, 15, 0); // white (favorites)
         init_pair(5, COLOR_RED, 0); // red (searched items)
+        init_pair(6, 15, COLOR_RED); // higlighted-red
     }
 
     pub fn populate_screen(&self, app: &Application) {
@@ -50,7 +51,6 @@ impl UserInterface {
             }
             if app.all_entries.as_ref().unwrap().get(&1).unwrap().contains(&entry) {
                 attron(COLOR_PAIR(4));
-                mvaddstr(0, 0, "spam");
                 mvaddstr(index as i32 + 3, 0, &format!(" {1:0$}", COLS() as usize - 1, entry));
                 attroff(COLOR_PAIR(4));
             }
@@ -148,5 +148,13 @@ impl UserInterface {
 
     fn get_page_size(&self, all_entries: &Vec<String>) -> i32 {
         self.get_page(all_entries).len() as i32
+    }
+
+    pub fn prompt_for_deletion(&self, command: &str) {
+        let prompt = format!("Do you want to delete all occurences of {}? y/n", command);
+        mvaddstr(1, 0, &format!("{1:0$}", COLS() as usize, ""));
+        attron(COLOR_PAIR(6));
+        mvaddstr(1, 0, &prompt);
+        attroff(COLOR_PAIR(6));
     }
 }

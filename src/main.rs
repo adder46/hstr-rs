@@ -79,6 +79,11 @@ fn main() {
                         app.search_string.pop();
                         app.all_entries = app.to_restore.clone();
                         app.search(&mut user_interface);
+                    },
+                    KEY_DC => {
+                        let command = user_interface.get_selected(&app);
+                        app.delete_from_history(&mut user_interface, command);
+                        user_interface.populate_screen(&app);
                     }
                     _ => {}
                 }

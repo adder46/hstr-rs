@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use ncurses::*;
 use crate::sort::sort;
 use crate::util::{read_file, write_file};
 use crate::ui::UserInterface;
@@ -90,5 +91,24 @@ impl Application {
     pub fn toggle_view(&mut self, user_interface: &mut UserInterface) {
         self.view = (self.view + 1) % 3;
         user_interface.selected = 0;
+    }
+
+    pub fn delete_from_history(&mut self, user_interface: &mut UserInterface, command: String) {
+        user_interface.prompt_for_deletion(&command);
+        let answer = getch();
+        match answer {
+            121 => { // "y"
+                let all_history = self.all_entries
+                    .as_mut()
+                    .unwrap()
+                    .get_mut(&2)
+                    .unwrap();
+                all_history.retain(|x| x != &command);
+                write_file(HISTORY, &all_history);
+                self.load_data();
+            },
+            110 => {}, // "n"
+            _ => {}
+        }
     }
 }
