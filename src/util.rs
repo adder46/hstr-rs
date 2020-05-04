@@ -1,21 +1,26 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use libc::{c_char, gethostname, ioctl, sysconf, TIOCSTI, _SC_HOST_NAME_MAX};
 use std::env;
+use std::fs::{create_dir_all, File};
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
+use libc::{c_char, gethostname, ioctl, sysconf, TIOCSTI, _SC_HOST_NAME_MAX};
 
 pub fn modulo(a: i32, b: i32) -> i32 {
     ((a % b) + b) % b
 }
 
 pub fn read(path: &str) -> Vec<String> {
-    let file = File::open(path).unwrap();
-    let reader = BufReader::new(file);
-    let mut history = Vec::new();
-    for line in reader.lines() {
-        history.push(line.unwrap());
+    let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
+    if !Path::new(p.as_path()).exists() {
+        create_dir_all(p.parent().unwrap());
+        File::create(p.as_path());
+        Vec::new()
+    } else {
+        let file = File::open(p).unwrap();
+        let reader = BufReader::new(file);
+        let contents = reader.lines().map(|l| l.unwrap()).collect();
+        contents
     }
-    history
 }
 
 pub fn sort(entries: &mut Vec<String>) -> Vec<String> {
