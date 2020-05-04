@@ -2,10 +2,14 @@ use std::collections::HashMap;
 use std::env;
 use std::fs::{create_dir_all, File};
 use std::io::{BufRead, BufReader};
+use std::ops::{Add, Rem};
 use std::path::{Path, PathBuf};
 use libc::{c_char, gethostname, ioctl, sysconf, TIOCSTI, _SC_HOST_NAME_MAX};
 
-pub fn modulo(a: i32, b: i32) -> i32 {
+pub fn modulo<T>(a: T, b: T) -> T
+where
+    T: Copy + Add<T, Output=T> + Rem<T, Output=T>,
+{
     ((a % b) + b) % b
 }
 
@@ -64,8 +68,8 @@ fn frequency_map(entries: &Vec<String>) -> HashMap<String, usize> {
 
 fn position_map(entries: &Vec<String>) -> HashMap<String, usize> {
     let mut map = HashMap::new();
-    for (pos, entry) in entries.iter().enumerate() {
-        map.insert(entry.clone(), pos);
+    for (pos, e) in entries.iter().enumerate() {
+        map.insert(e.clone(), pos);
     }
     map
 }

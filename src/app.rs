@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use crate::util::{read, sort};
 use crate::ui::UserInterface;
 
-const FAVORITES: &str = "/home/alex/.config/venom/favorites";
-
 pub struct Application {
     pub all_entries: Option<HashMap<u8, Vec<String>>>,
     pub to_restore: Option<HashMap<u8, Vec<String>>>,
@@ -26,10 +24,10 @@ impl Application {
     }
 
     pub fn load_data(&mut self) {
-        let history = read("/home/alex/.bash_history");
+        let history = read(".bash_history");
         let mut entries = HashMap::new();
         entries.insert(0, sort(&mut history.clone())); // sorted
-        entries.insert(1, read(FAVORITES)); // favorites
+        entries.insert(1, read(".config/venom/favorites")); // favorites
         entries.insert(2, history.clone()); // all history
         self.all_entries = Some(entries.clone());
         self.to_restore = Some(entries.clone());
