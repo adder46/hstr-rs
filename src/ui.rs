@@ -42,7 +42,7 @@ impl UserInterface {
                         mvaddch(
                             index as i32 + 3,
                             (*substring_index + i + 1) as i32,
-                            app.search_string.chars().nth(i).unwrap() as u64
+                            app.search_string.chars().nth(i).unwrap() as chtype
                         );
                         attroff(COLOR_PAIR(5) | A_BOLD());    
                     }
@@ -50,6 +50,7 @@ impl UserInterface {
             }
             if app.all_entries.as_ref().unwrap().get(&1).unwrap().contains(&entry) {
                 attron(COLOR_PAIR(4));
+                mvaddstr(0, 0, "spam");
                 mvaddstr(index as i32 + 3, 0, &format!(" {1:0$}", COLS() as usize - 1, entry));
                 attroff(COLOR_PAIR(4));
             }

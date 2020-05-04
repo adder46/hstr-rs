@@ -23,6 +23,10 @@ fn main() {
                         app.toggle_match(&mut user_interface);
                         user_interface.populate_screen(&app);
                     },
+                    6 => { // C-f 
+                        let command = user_interface.get_selected(&app);
+                        app.add_to_or_remove_from_favorites(command);
+                    },
                     9 => { // TAB
                         let command = user_interface.get_selected(&app);
                         util::echo(command);

@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use crate::sort::sort;
-use crate::util::read;
+use crate::util::{read_file, write_file};
 use crate::ui::UserInterface;
+
+const HISTORY: &str = ".bash_history";
+const FAVORITES: &str = ".config/hstr-rs/favorites";
 
 pub struct Application {
     pub all_entries: Option<HashMap<u8, Vec<String>>>,
@@ -25,10 +28,10 @@ impl Application {
     }
 
     pub fn load_data(&mut self) {
-        let history = read(".bash_history");
+        let history = read_file(HISTORY);
         let mut entries = HashMap::new();
         entries.insert(0, sort(&mut history.clone())); // sorted
-        entries.insert(1, read(".config/venom/favorites")); // favorites
+        entries.insert(1, read_file(FAVORITES)); // favorites
         entries.insert(2, history.clone()); // all history
         self.all_entries = Some(entries.clone());
         self.to_restore = Some(entries.clone());
@@ -59,6 +62,20 @@ impl Application {
             // handle regex searching here
         }
         user_interface.populate_screen(&self);
+    }
+
+    pub fn add_to_or_remove_from_favorites(&mut self, command: String) {
+        let favorites = self.all_entries
+            .as_mut()
+            .unwrap()
+            .get_mut(&1)
+            .unwrap();
+        if !favorites.contains(&command) {
+            favorites.push(command);
+        } else {
+            favorites.retain(|x| x != &command);
+        }
+        write_file(FAVORITES, &favorites);
     }
 
     pub fn toggle_case(&mut self) {

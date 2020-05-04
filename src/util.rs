@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::{create_dir_all, File};
+use std::fs::{create_dir_all, File, write};
 use std::io::{BufRead, BufReader};
 use std::ops::{Add, Rem};
 use std::path::{Path, PathBuf};
@@ -12,7 +12,7 @@ where
     ((a % b) + b) % b
 }
 
-pub fn read(path: &str) -> Vec<String> {
+pub fn read_file(path: &str) -> Vec<String> {
     let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
     if !Path::new(p.as_path()).exists() {
         create_dir_all(p.parent().unwrap());
@@ -24,6 +24,11 @@ pub fn read(path: &str) -> Vec<String> {
         let contents = reader.lines().map(|l| l.unwrap()).collect();
         contents
     }
+}
+
+pub fn write_file(path: &str, thing: &Vec<String>) {
+    let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
+    write(p, thing.join("\n"));
 }
 
 pub fn echo(command: String) {
