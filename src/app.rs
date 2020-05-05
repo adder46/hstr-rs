@@ -25,7 +25,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn new() -> Self {
+    pub fn new(view: u8, match_: u8, case_sensitivity: u8, search_string: String) -> Self {
         let history = read_file(HISTORY);
         let all_entries = Entries {
             all: history.clone(),
@@ -35,10 +35,10 @@ impl Application {
         Self { 
             all_entries: all_entries.clone(),
             to_restore: all_entries.clone(),
-            view: 0,
-            match_: 0,
-            case_sensitivity: 0,
-            search_string: String::new()
+            view: view,
+            match_: match_,
+            case_sensitivity: case_sensitivity,
+            search_string: search_string
         }
     }
 

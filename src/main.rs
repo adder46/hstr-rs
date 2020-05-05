@@ -9,7 +9,7 @@ fn main() {
     initscr();
     noecho();
     keypad(stdscr(), true);
-    let mut app = app::Application::new();
+    let mut app = app::Application::new(0, 0, 0, String::new());
     let mut user_interface = ui::UserInterface::new();
     user_interface.init_color_pairs();
     user_interface.populate_screen(&app);
@@ -83,6 +83,9 @@ fn main() {
                         let command = user_interface.get_selected(&entries);
                         user_interface.prompt_for_deletion(&command);
                         app.delete_from_history(command);
+                        app = app::Application::new(
+                            app.view, app.match_, app.case_sensitivity, app.search_string
+                        );
                         user_interface.populate_screen(&app);
                     }
                     _ => {}
