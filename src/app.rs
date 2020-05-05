@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use ncurses::*;
+use regex::Regex;
 use crate::sort::sort;
 use crate::util::{read_file, write_file};
 use crate::ui::UserInterface;
@@ -60,7 +61,14 @@ impl Application {
                     .retain(|x| x.to_lowercase().contains(search_string));
             }
         } else {
-            // handle regex searching here
+            let search_string = &self.search_string.to_lowercase();
+            let re = Regex::new(search_string).unwrap();
+            self.all_entries
+                .as_mut()
+                .unwrap()
+                .get_mut(&self.view)
+                .unwrap()
+                .retain(|x| re.is_match(x));
         }
         user_interface.populate_screen(&self);
     }

@@ -1,4 +1,5 @@
 use ncurses::*;
+use regex::Regex;
 use crate::app::Application;
 use crate::util::{modulo, get_shell_prompt};
 
@@ -37,15 +38,13 @@ impl UserInterface {
             mvaddstr(index as i32 + 3, 0, &format!(" {1:0$}", COLS() as usize - 1, entry));
             let substring_indexes = self.get_substring_indexes(&entry, &app.search_string);
             if !substring_indexes.is_empty() {
-                for (substring_index, _substring) in substring_indexes.iter() {
-                    for i in 0..app.search_string.len() {
+                for (idx, letter) in entry.chars().enumerate() {
+                    if substring_indexes.contains(&idx) {
                         attron(COLOR_PAIR(5) | A_BOLD());
-                        mvaddch(
-                            index as i32 + 3,
-                            (*substring_index + i + 1) as i32,
-                            app.search_string.chars().nth(i).unwrap() as chtype
-                        );
-                        attroff(COLOR_PAIR(5) | A_BOLD());    
+                        mvaddch(index as i32 + 3, idx as i32 + 1, letter as chtype);
+                        attroff(COLOR_PAIR(5) | A_BOLD());
+                    } else {
+                        mvaddch(index as i32 + 3, idx as i32 + 1, letter as chtype);
                     }
                 }
             }
@@ -127,8 +126,18 @@ impl UserInterface {
         }
     }
 
-    fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<(usize, &'a str)> {
-        string.match_indices(substring).collect()
+    fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<usize> {
+        let mut pairs = Vec::new();
+        for mat in Regex::new(substring).unwrap().find_iter(string) {
+            pairs.push((mat.start(), mat.end()));
+        }
+        let mut indexes = Vec::new();
+        for (start, end) in pairs.iter() {
+            for i in *start..*end {
+                indexes.push(i);
+            }
+        }
+        indexes
     }
 
     fn turn_page(&mut self, all_entries: &Vec<String>, direction: i32) {
