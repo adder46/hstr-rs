@@ -10,5 +10,5 @@ edition = "2018"
 ncurses = { version = "5.99.0", features = ["wide"] }
 libc = "0.2"
 dirs = "2.0.2"
-regex = { version = "1", features = ["pattern"] }
+regex = "1"
 

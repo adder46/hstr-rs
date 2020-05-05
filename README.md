@@ -4,7 +4,6 @@ Work in progress.
 
 ### FIXME
 
-- Implement regex searching
 - Write tests
 - Write installation instructions
 - Make asciicast
@@ -17,3 +16,4 @@ Work in progress.
 - Handle non-existant files
 - Implement add to favorites
 - Implement delete from history
+- Implement regex searching

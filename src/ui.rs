@@ -127,17 +127,11 @@ impl UserInterface {
     }
 
     fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<usize> {
-        let mut pairs = Vec::new();
-        for mat in Regex::new(substring).unwrap().find_iter(string) {
-            pairs.push((mat.start(), mat.end()));
-        }
-        let mut indexes = Vec::new();
-        for (start, end) in pairs.iter() {
-            for i in *start..*end {
-                indexes.push(i);
-            }
-        }
-        indexes
+        Regex::new(substring)
+            .unwrap()
+            .find_iter(string)
+            .flat_map(|mat| mat.range())
+            .collect()
     }
 
     fn turn_page(&mut self, all_entries: &Vec<String>, direction: i32) {

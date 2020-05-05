@@ -61,8 +61,7 @@ impl Application {
                     .retain(|x| x.to_lowercase().contains(search_string));
             }
         } else {
-            let search_string = &self.search_string.to_lowercase();
-            let re = Regex::new(search_string).unwrap();
+            let re = Regex::new(&self.search_string).unwrap();
             self.all_entries
                 .as_mut()
                 .unwrap()
