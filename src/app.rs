@@ -39,9 +39,7 @@ impl Application {
         self.to_restore = Some(entries.clone());
     }
 
-    pub fn search(&mut self, user_interface: &mut UserInterface) {
-        user_interface.selected = 0;
-        user_interface.page = 1;
+    pub fn search(&mut self) {
         if self.match_ == 0 {
             if self.case_sensitivity == 1 {
                 let search_string = &self.search_string;
@@ -69,7 +67,6 @@ impl Application {
                 .unwrap()
                 .retain(|x| re.is_match(x));
         }
-        user_interface.populate_screen(&self);
     }
 
     pub fn add_to_or_remove_from_favorites(&mut self, command: String) {
@@ -86,22 +83,7 @@ impl Application {
         write_file(FAVORITES, &favorites);
     }
 
-    pub fn toggle_case(&mut self) {
-        self.case_sensitivity = (self.case_sensitivity + 1) % 2;
-    }
-
-    pub fn toggle_match(&mut self, user_interface: &mut UserInterface) {
-        self.match_ = (self.match_ + 1) % 2;
-        user_interface.selected = 0;
-    }
-
-    pub fn toggle_view(&mut self, user_interface: &mut UserInterface) {
-        self.view = (self.view + 1) % 3;
-        user_interface.selected = 0;
-    }
-
-    pub fn delete_from_history(&mut self, user_interface: &mut UserInterface, command: String) {
-        user_interface.prompt_for_deletion(&command);
+    pub fn delete_from_history(&mut self, command: String) {
         let answer = getch();
         match answer {
             121 => { // "y"
@@ -114,8 +96,19 @@ impl Application {
                 write_file(HISTORY, &all_history);
                 self.load_data();
             },
-            110 => {}, // "n"
             _ => {}
         }
+    }
+
+    pub fn toggle_case(&mut self) {
+        self.case_sensitivity = (self.case_sensitivity + 1) % 2;
+    }
+
+    pub fn toggle_match(&mut self) {
+        self.match_ = (self.match_ + 1) % 2;
+    }
+
+    pub fn toggle_view(&mut self) {
+        self.view = (self.view + 1) % 3;
     }
 }

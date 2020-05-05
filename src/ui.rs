@@ -91,10 +91,7 @@ impl UserInterface {
         }
     }
 
-    pub fn get_selected(&self, app: &Application) -> String {
-        let entries = self.get_page(
-            &app.all_entries.as_ref().unwrap().get(&app.view).unwrap()
-        );
+    pub fn get_selected(&self, entries: &Vec<String>) -> String {
         String::from(self.get_page(&entries).get(self.selected as usize).unwrap())
     }
 

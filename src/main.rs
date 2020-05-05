@@ -20,20 +20,24 @@ fn main() {
             WchResult::Char(ch) => {
                 match ch {
                     5 => { // C-e
-                        app.toggle_match(&mut user_interface);
+                        app.toggle_match();
+                        user_interface.selected = 0;
                         user_interface.populate_screen(&app);
                     },
-                    6 => { // C-f 
-                        let command = user_interface.get_selected(&app);
+                    6 => { // C-f
+                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let command = user_interface.get_selected(&entries);
                         app.add_to_or_remove_from_favorites(command);
                     },
                     9 => { // TAB
-                        let command = user_interface.get_selected(&app);
+                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let command = user_interface.get_selected(&entries);
                         util::echo(command);
                         break;
                     },
                     10 => { // ENTER ("\n")
-                        let command = user_interface.get_selected(&app);
+                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let command = user_interface.get_selected(&entries);
                         util::echo(command);
                         util::echo("\n".to_string());
                         break;
@@ -44,12 +48,16 @@ fn main() {
                     },
                     27 => break, // ESC
                     31 => { // C-/
-                        app.toggle_view(&mut user_interface);
+                        app.toggle_view();
+                        user_interface.selected = 0;
                         user_interface.populate_screen(&app);
                     }
                     _ => {
                         app.search_string += &std::char::from_u32(ch as u32).unwrap().to_string();
-                        app.search(&mut user_interface);
+                        user_interface.selected = 0;
+                        user_interface.page = 1;               
+                        app.search();
+                        user_interface.populate_screen(&app);
                     },
                 }
             },
@@ -68,21 +76,23 @@ fn main() {
                     KEY_DOWN => {
                         user_interface.move_selected(
                             &app.all_entries
-                            .as_ref()
-                            .unwrap()
-                            .get(&app.view)
-                            .unwrap(), 1
+                                .as_ref()
+                                .unwrap()
+                                .get(&app.view)
+                                .unwrap(), 1
                         );
                         user_interface.populate_screen(&app);
                     },
                     KEY_BACKSPACE => {
                         app.search_string.pop();
                         app.all_entries = app.to_restore.clone();
-                        app.search(&mut user_interface);
+                        app.search();
                     },
                     KEY_DC => {
-                        let command = user_interface.get_selected(&app);
-                        app.delete_from_history(&mut user_interface, command);
+                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let command = user_interface.get_selected(&entries);
+                        user_interface.prompt_for_deletion(&command);
+                        app.delete_from_history(command);
                         user_interface.populate_screen(&app);
                     }
                     _ => {}
