@@ -11,7 +11,6 @@ fn main() {
     keypad(stdscr(), true);
     let mut app = app::Application::new();
     let mut user_interface = ui::UserInterface::new();
-    app.load_data();
     user_interface.init_color_pairs();
     user_interface.populate_screen(&app);
     loop {
@@ -25,19 +24,19 @@ fn main() {
                         user_interface.populate_screen(&app);
                     },
                     6 => { // C-f
-                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let entries = app.get_entries(app.view);
                         let command = user_interface.get_selected(&entries);
                         app.add_to_or_remove_from_favorites(command);
                     },
                     9 => { // TAB
-                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let entries = app.get_entries(app.view);
                         let command = user_interface.get_selected(&entries);
                         util::echo(command);
                         break;
                     },
                     10 => { // ENTER ("\n")
-                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
-                        let command = user_interface.get_selected(&entries);
+                    let entries = app.get_entries(app.view);
+                    let command = user_interface.get_selected(&entries);
                         util::echo(command);
                         util::echo("\n".to_string());
                         break;
@@ -64,32 +63,23 @@ fn main() {
             WchResult::KeyCode(code) => {
                 match code {
                     KEY_UP => {
-                        user_interface.move_selected(
-                            &app.all_entries
-                                .as_ref()
-                                .unwrap()
-                                .get(&app.view)
-                                .unwrap(), -1
-                            );
+                        let entries = app.get_entries(app.view);
+                        user_interface.move_selected(entries, -1);
                         user_interface.populate_screen(&app);
                     },
                     KEY_DOWN => {
-                        user_interface.move_selected(
-                            &app.all_entries
-                                .as_ref()
-                                .unwrap()
-                                .get(&app.view)
-                                .unwrap(), 1
-                        );
+                        let entries = app.get_entries(app.view);
+                        user_interface.move_selected(entries, 1);
                         user_interface.populate_screen(&app);
                     },
                     KEY_BACKSPACE => {
                         app.search_string.pop();
                         app.all_entries = app.to_restore.clone();
                         app.search();
+                        user_interface.populate_screen(&app);
                     },
                     KEY_DC => {
-                        let entries = app.all_entries.as_ref().unwrap().get(&app.view).unwrap();
+                        let entries = app.get_entries(app.view);
                         let command = user_interface.get_selected(&entries);
                         user_interface.prompt_for_deletion(&command);
                         app.delete_from_history(command);
