@@ -20,7 +20,7 @@ fn main() {
                 match ch {
                     5 => { // C-e
                         app.toggle_match();
-                        user_interface.selected = 0;
+                        user_interface.set_selected(0);
                         user_interface.populate_screen(&app);
                     },
                     6 => { // C-f
@@ -48,15 +48,15 @@ fn main() {
                     27 => break, // ESC
                     31 => { // C-/
                         app.toggle_view();
-                        user_interface.selected = 0;
+                        user_interface.set_selected(0);
                         user_interface.populate_screen(&app);
                     }
                     _ => {
                         let mut ss = String::from(app.search_string());
                         ss.push(std::char::from_u32(ch as u32).unwrap());
                         app.set_search_string(&ss);
-                        user_interface.selected = 0;
-                        user_interface.page = 1;               
+                        user_interface.set_selected(0);
+                        user_interface.set_page(1);               
                         app.search();
                         user_interface.populate_screen(&app);
                     },

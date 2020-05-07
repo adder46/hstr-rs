@@ -6,8 +6,8 @@ use crate::util::{modulo, get_shell_prompt};
 const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
 pub struct UserInterface {
-    pub page: i32,
-    pub selected: i32
+    page: i32,
+    selected: i32
 }
 
 impl UserInterface {
@@ -17,6 +17,14 @@ impl UserInterface {
             page: 1,
             selected: 0
          }
+    }
+
+    pub fn set_page(&mut self, val: i32) {
+        self.page = val;
+    }
+
+    pub fn set_selected(&mut self, val: i32) {
+        self.selected = val;
     }
 
     pub fn init_color_pairs(&self) {
