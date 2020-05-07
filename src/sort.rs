@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::cmp::Eq;
 use std::hash::Hash;
 
-pub fn sort<T>(entries: &mut Vec<T>) -> Vec<T>
+pub fn sort<T>(mut entries: Vec<T>) -> Vec<T>
 where
     T: Clone + Eq + Hash
 {
-    let freq_map = frequency_map(entries);
-    let pos_map = position_map(entries);
+    let freq_map = frequency_map(&entries);
+    let pos_map = position_map(&entries);
     entries.sort_unstable_by(|a, b| pos_map.get(b).unwrap().cmp(pos_map.get(a).unwrap()));
     entries.dedup();
     entries.sort_by(|a, b| freq_map.get(b).unwrap().cmp(freq_map.get(a).unwrap()));
-    entries.to_vec()
+    entries
 }
 
 fn frequency_map<T>(entries: &Vec<T>) -> HashMap<T, usize>
@@ -40,8 +40,8 @@ where
 mod tests {
     #[test]
     fn test_sort() {
-        let mut vec = vec![3, 2, 4, 6, 2, 4, 3, 3, 4, 5, 6, 3, 2, 4, 5, 5, 3];
-        let vec = super::sort(&mut vec);
+        let vec = vec![3, 2, 4, 6, 2, 4, 3, 3, 4, 5, 6, 3, 2, 4, 5, 5, 3];
+        let vec = super::sort(vec);
         assert_eq!(vec, [3, 4, 5, 2, 6]);
     }
 }

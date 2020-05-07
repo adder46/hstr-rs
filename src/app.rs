@@ -27,7 +27,7 @@ impl Application {
         let history = read_file(HISTORY);
         let all_entries = Entries {
             all: history.clone(),
-            sorted: sort(&mut history.clone()),
+            sorted: sort(history.clone()),
             favorites: read_file(FAVORITES)
         };
         Self { 
