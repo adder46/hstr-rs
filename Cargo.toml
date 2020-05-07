@@ -11,4 +11,4 @@ ncurses = { version = "5.99.0", features = ["wide"] }
 libc = "0.2"
 dirs = "2.0.2"
 regex = "1"
-
+gethostname = "0.2.1"

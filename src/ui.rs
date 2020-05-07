@@ -68,7 +68,7 @@ impl UserInterface {
         attron(COLOR_PAIR(3));
         mvaddstr(2, 0, &format!("{1:0$}", COLS() as usize, status));
         attroff(COLOR_PAIR(3));
-        mvaddstr(0, 0, &format!("{}{}", get_shell_prompt(), app.search_string));
+        mvaddstr(0, 0, &format!("{} {}", get_shell_prompt(), app.search_string));
     }
 
     pub fn move_selected(&mut self, all_entries: &Vec<String>, direction: i32) {

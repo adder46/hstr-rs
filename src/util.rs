@@ -33,17 +33,11 @@ pub fn echo(command: String) {
 }
 
 pub fn get_shell_prompt() -> String {
-    let hostname_max = unsafe { sysconf(_SC_HOST_NAME_MAX) };
-    let mut buffer = vec![0 as u8; (hostname_max as usize) + 1];
-    unsafe {
-        gethostname(buffer.as_mut_ptr() as *mut c_char, buffer.len());
-    }
-    let end = buffer
-        .iter()
-        .position(|&b| b == 0)
-        .unwrap_or_else(|| buffer.len());
-    buffer.resize(end, 0);
-    format!("{}@{}$ ", env::var("USER").unwrap(), String::from_utf8(buffer).unwrap())
+    format!(
+        "{}@{}$",
+        env::var("USER").unwrap(),
+        gethostname::gethostname().into_string().unwrap()
+    )
 }
 
 pub fn modulo<T>(a: T, b: T) -> T
