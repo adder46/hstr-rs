@@ -75,7 +75,9 @@ fn main() {
                         user_interface.populate_screen(&app);
                     },
                     KEY_BACKSPACE => {
-                        app.search_string().pop();
+                        let mut ss = String::from(app.search_string());
+                        ss.pop();
+                        app.set_search_string(&ss);
                         app.set_all_entries(app.to_restore().clone());
                         app.search();
                         user_interface.populate_screen(&app);
@@ -86,7 +88,7 @@ fn main() {
                         user_interface.prompt_for_deletion(&command);
                         app.delete_from_history(command);
                         app = app::Application::new(
-                            app.view(), app.match_(), app.case_sensitivity(), app.search_string()
+                            app.view(), app.match_(), app.case_sensitivity(), String::from(app.search_string())
                         );
                         user_interface.populate_screen(&app);
                     }
