@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use ncurses::*;
 use regex::Regex;
 use crate::sort::sort;
 use crate::util::{read_file, write_file};
-use crate::ui::UserInterface;
 
 const HISTORY: &str = ".bash_history";
 const FAVORITES: &str = ".config/hstr-rs/favorites";
