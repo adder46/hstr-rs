@@ -88,7 +88,10 @@ fn main() {
                         user_interface.prompt_for_deletion(&command);
                         app.delete_from_history(command);
                         app = app::Application::new(
-                            app.view(), app.match_(), app.case_sensitivity(), String::from(app.search_string())
+                            app.view(), 
+                            app.match_(),
+                            app.case_sensitivity(),
+                            String::from(app.search_string())
                         );
                         user_interface.populate_screen(&app);
                     }
