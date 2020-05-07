@@ -14,15 +14,16 @@ pub struct Entries {
 }
 
 pub struct Application {
-    pub all_entries: Entries,
-    pub to_restore: Entries,
-    pub view: u8,
-    pub match_: u8,
-    pub case_sensitivity: u8,
-    pub search_string: String
+    all_entries: Entries,
+    to_restore: Entries,
+    view: u8,
+    match_: u8,
+    case_sensitivity: u8,
+    search_string: String
 }
 
 impl Application {
+
     pub fn new(view: u8, match_: u8, case_sensitivity: u8, search_string: String) -> Self {
         let history = read_file(HISTORY);
         let all_entries = Entries {
@@ -38,6 +39,33 @@ impl Application {
             case_sensitivity: case_sensitivity,
             search_string: search_string
         }
+    }
+
+    pub fn set_all_entries(&mut self, val: Entries) {
+        self.all_entries = val;
+    }
+
+    pub fn to_restore(&self) -> &Entries {
+        &self.to_restore
+    }
+
+    pub fn view(&self) -> u8 {
+        self.view
+    }
+
+    pub fn match_(&self) -> u8 {
+        self.match_
+    }
+    pub fn case_sensitivity(&self) -> u8 {
+        self.case_sensitivity
+    }
+
+    pub fn search_string(&self) -> &str {
+        &self.search_string
+    }
+
+    pub fn set_search_string(&mut self, ss: &str) {
+        self.search_string = ss.to_string();
     }
 
     pub fn get_entries_mut(&mut self, view: u8) -> &mut Vec<String> {
