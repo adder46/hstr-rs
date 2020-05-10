@@ -79,18 +79,18 @@ impl UserInterface {
         mvaddstr(0, 0, &format!("{} {}", get_shell_prompt(), app.search_string()));
     }
 
-    pub fn move_selected(&mut self, all_entries: &[String], direction: i32) {
-        let page_size = self.get_page_size(all_entries);
+    pub fn move_selected(&mut self, entries: &[String], direction: i32) {
+        let page_size = self.get_page_size(entries);
         self.selected += direction;
         self.selected = i32::rem_euclid(self.selected, page_size);
         if direction == 1 {
             if self.selected == 0 {
-                self.turn_page(all_entries, 1);
+                self.turn_page(entries, 1);
             }    
         } else if direction == -1 {
             if self.selected == (page_size - 1) {
-                self.turn_page(all_entries, -1);
-                self.selected = self.get_page_size(all_entries) - 1;
+                self.turn_page(entries, -1);
+                self.selected = self.get_page_size(entries) - 1;
             }    
         }
     }
@@ -130,23 +130,23 @@ impl UserInterface {
             .collect()
     }
 
-    fn turn_page(&mut self, all_entries: &[String], direction: i32) {
-        self.page = i32::rem_euclid(self.page - 1 + direction, self.total_pages(all_entries)) + 1;
+    fn turn_page(&mut self, entries: &[String], direction: i32) {
+        self.page = i32::rem_euclid(self.page - 1 + direction, self.total_pages(entries)) + 1;
     }
 
-    fn total_pages(&self, all_entries: &[String]) -> i32 {
-        all_entries.chunks(LINES() as usize - 3).len() as i32
+    fn total_pages(&self, entries: &[String]) -> i32 {
+        entries.chunks(LINES() as usize - 3).len() as i32
     }
 
-    fn get_page(&self, all_entries: &[String]) -> Vec<String> {
-        match all_entries.chunks(LINES() as usize - 3).nth(self.page as usize - 1) { 
+    fn get_page(&self, entries: &[String]) -> Vec<String> {
+        match entries.chunks(LINES() as usize - 3).nth(self.page as usize - 1) { 
             Some(val) => val.to_vec(),
             None => Vec::new()
         }
     }
 
-    fn get_page_size(&self, all_entries: &[String]) -> i32 {
-        self.get_page(all_entries).len() as i32
+    fn get_page_size(&self, entries: &[String]) -> i32 {
+        self.get_page(entries).len() as i32
     }
 
     pub fn prompt_for_deletion(&self, command: &str) {

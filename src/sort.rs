@@ -14,7 +14,7 @@ where
     entries
 }
 
-fn frequency_map<T>(entries: &Vec<T>) -> HashMap<T, usize>
+fn frequency_map<T>(entries: &[T]) -> HashMap<T, usize>
 where
     T: Clone + Eq + Hash
 {
@@ -25,7 +25,7 @@ where
     map
 }
 
-fn position_map<T>(entries: &Vec<T>) -> HashMap<T, usize>
+fn position_map<T>(entries: &[T]) -> HashMap<T, usize>
 where
     T: Clone + Eq + Hash
 {
