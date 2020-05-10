@@ -5,6 +5,7 @@ use crate::util::{read_file, write_file};
 
 const HISTORY: &str = ".bash_history";
 const FAVORITES: &str = ".config/hstr-rs/favorites";
+const Y: i32 = 121;
 
 #[derive(Clone)]
 pub struct Entries {
@@ -114,7 +115,7 @@ impl Application {
     pub fn delete_from_history(&mut self, command: String) {
         let answer = getch();
         match answer {
-            121 => { // "y"
+            Y => {
                 let all_history = self.get_entries_mut(2);
                 all_history.retain(|x| x != &command);
                 write_file(HISTORY, &all_history);
