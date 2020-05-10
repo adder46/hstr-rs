@@ -1,20 +1,19 @@
 use std::env;
 use std::fs::{create_dir_all, File, write};
 use std::io::{BufRead, BufReader};
-use std::ops::{Add, Rem};
 use std::path::{Path, PathBuf};
 use libc::{ioctl, TIOCSTI};
 
-pub fn read_file(path: &str) -> Vec<String> {
+pub fn read_file(path: &str) -> Result<Vec<String>, std::io::Error> {
     let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
     if !Path::new(p.as_path()).exists() {
         create_dir_all(p.parent().unwrap());
         File::create(p.as_path());
-        Vec::new()
+        Ok(Vec::new())
     } else {
         let file = File::open(p).unwrap();
         let reader = BufReader::new(file);
-        let contents = reader.lines().map(|l| l.unwrap()).collect();
+        let contents = reader.lines().collect::<Result<Vec<_>, _>>();
         contents
     }
 }
@@ -38,21 +37,4 @@ pub fn get_shell_prompt() -> String {
         env::var("USER").unwrap(),
         gethostname::gethostname().into_string().unwrap()
     )
-}
-
-pub fn modulo<T>(a: T, b: T) -> T
-where
-    T: Copy + Add<T, Output=T> + Rem<T, Output=T>,
-{
-    ((a % b) + b) % b
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_modulo() {
-        let a = -21;
-        let b = 4;
-        assert_eq!(super::modulo(a, b), 3);
-    }
 }

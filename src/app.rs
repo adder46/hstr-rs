@@ -17,27 +17,27 @@ pub struct Application {
     all_entries: Entries,
     to_restore: Entries,
     view: u8,
-    match_: u8,
-    case_sensitivity: u8,
+    regex_match: bool,
+    case_sensitivity: bool,
     search_string: String
 }
 
 impl Application {
 
-    pub fn new(view: u8, match_: u8, case_sensitivity: u8, search_string: String) -> Self {
-        let history = read_file(HISTORY);
+    pub fn new(view: u8, regex_match: bool, case_sensitivity: bool, search_string: String) -> Self {
+        let history = read_file(HISTORY).unwrap();
         let all_entries = Entries {
             all: history.clone(),
             sorted: sort(history.clone()),
-            favorites: read_file(FAVORITES)
+            favorites: read_file(FAVORITES).unwrap()
         };
         Self { 
             all_entries: all_entries.clone(),
             to_restore: all_entries.clone(),
-            view: view,
-            match_: match_,
-            case_sensitivity: case_sensitivity,
-            search_string: search_string
+            view,
+            regex_match,
+            case_sensitivity,
+            search_string
         }
     }
 
@@ -53,19 +53,19 @@ impl Application {
         self.view
     }
 
-    pub fn match_(&self) -> u8 {
-        self.match_
+    pub fn regex_match(&self) -> bool {
+        self.regex_match
     }
-    pub fn case_sensitivity(&self) -> u8 {
+    pub fn case_sensitivity(&self) -> bool {
         self.case_sensitivity
+    }
+
+    pub fn search_string_mut(&mut self) -> &mut String {
+        &mut self.search_string
     }
 
     pub fn search_string(&self) -> &str {
         &self.search_string
-    }
-
-    pub fn set_search_string(&mut self, ss: &str) {
-        self.search_string = ss.to_string();
     }
 
     pub fn get_entries_mut(&mut self, view: u8) -> &mut Vec<String> {
@@ -77,7 +77,7 @@ impl Application {
         }
     }
 
-    pub fn get_entries(&self, view: u8) -> &Vec<String> {
+    pub fn get_entries(&self, view: u8) -> &[String] {
         match view {
             0 => &self.all_entries.sorted,
             1 => &self.all_entries.favorites,
@@ -87,8 +87,8 @@ impl Application {
     }
 
     pub fn search(&mut self) {
-        if self.match_ == 0 {
-            if self.case_sensitivity == 1 {
+        if self.regex_match == false {
+            if self.case_sensitivity == true {
                 let search_string = self.search_string.clone();
                 self.get_entries_mut(self.view).retain(|x| x.contains(&search_string))
             } else {
@@ -124,11 +124,11 @@ impl Application {
     }
 
     pub fn toggle_case(&mut self) {
-        self.case_sensitivity = (self.case_sensitivity + 1) % 2;
+        self.case_sensitivity = !self.case_sensitivity;
     }
 
     pub fn toggle_match(&mut self) {
-        self.match_ = (self.match_ + 1) % 2;
+        self.regex_match = !self.regex_match;
     }
 
     pub fn toggle_view(&mut self) {

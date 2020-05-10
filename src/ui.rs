@@ -1,7 +1,7 @@
 use ncurses::*;
 use regex::Regex;
 use crate::app::Application;
-use crate::util::{modulo, get_shell_prompt};
+use crate::util::get_shell_prompt;
 
 const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
@@ -66,9 +66,9 @@ impl UserInterface {
             }
         }
         let status = format!(" - view:{} (C-/) - match: {} (C-e) - case:{} (C-t) - page {}/{} -",
-            self.display("view", app.view()),
-            self.display("match", app.match_()),
-            self.display("case", app.case_sensitivity()),
+            self.display_view(app.view()),
+            self.display_match(app.regex_match()),
+            self.display_case(app.case_sensitivity()),
             self.page,
             self.total_pages(app.get_entries(app.view())) 
         );
@@ -79,10 +79,10 @@ impl UserInterface {
         mvaddstr(0, 0, &format!("{} {}", get_shell_prompt(), app.search_string()));
     }
 
-    pub fn move_selected(&mut self, all_entries: &Vec<String>, direction: i32) {
+    pub fn move_selected(&mut self, all_entries: &[String], direction: i32) {
         let page_size = self.get_page_size(all_entries);
         self.selected += direction;
-        self.selected = modulo(self.selected, page_size);
+        self.selected = i32::rem_euclid(self.selected, page_size);
         if direction == 1 {
             if self.selected == 0 {
                 self.turn_page(all_entries, 1);
@@ -95,35 +95,30 @@ impl UserInterface {
         }
     }
 
-    pub fn get_selected(&self, entries: &Vec<String>) -> String {
+    pub fn get_selected(&self, entries: &[String]) -> String {
         String::from(self.get_page(&entries).get(self.selected as usize).unwrap())
     }
 
-    fn display(&self, to_get: &str, value: u8) -> &str {
-        match to_get {
-            "view" => {
-                match value {
-                    0 => "sorted",
-                    1 => "favorites",
-                    2 => "history",
-                    _ => "n/a"
-                }
-            },
-            "case" => {
-                match value {
-                    0 => "insensitive",
-                    1 => "sensitive",
-                    _ => "n/a"
-                }
-            },
-            "match" => {
-                match value {
-                    0 => "exact",
-                    1 => "regex",
-                    _ => "n/a"
-                }
-            },
+    fn display_view(&self, value: u8) -> &str {
+        match value {
+            0 => "sorted",
+            1 => "favorites",
+            2 => "history",
             _ => "n/a"
+        }
+    }
+
+    fn display_case(&self, value: bool) -> &str {
+        match value {
+            false => "insensitive",
+            true => "sensitive",
+        }
+    }
+
+    fn display_match(&self, value: bool) -> &str {
+        match value {
+            false => "exact",
+            true => "regex",
         }
     }
 
@@ -135,22 +130,22 @@ impl UserInterface {
             .collect()
     }
 
-    fn turn_page(&mut self, all_entries: &Vec<String>, direction: i32) {
-        self.page = modulo(self.page - 1 + direction, self.total_pages(all_entries)) + 1;
+    fn turn_page(&mut self, all_entries: &[String], direction: i32) {
+        self.page = i32::rem_euclid(self.page - 1 + direction, self.total_pages(all_entries)) + 1;
     }
 
-    fn total_pages(&self, all_entries: &Vec<String>) -> i32 {
+    fn total_pages(&self, all_entries: &[String]) -> i32 {
         all_entries.chunks(LINES() as usize - 3).len() as i32
     }
 
-    fn get_page(&self, all_entries: &Vec<String>) -> Vec<String> {
+    fn get_page(&self, all_entries: &[String]) -> Vec<String> {
         match all_entries.chunks(LINES() as usize - 3).nth(self.page as usize - 1) { 
             Some(val) => val.to_vec(),
             None => Vec::new()
         }
     }
 
-    fn get_page_size(&self, all_entries: &Vec<String>) -> i32 {
+    fn get_page_size(&self, all_entries: &[String]) -> i32 {
         self.get_page(all_entries).len() as i32
     }
 
