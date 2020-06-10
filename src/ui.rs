@@ -65,7 +65,7 @@ impl UserInterface {
                 attroff(COLOR_PAIR(2));
             }
         }
-        let status = format!(" - view:{} (C-/) - match: {} (C-e) - case:{} (C-t) - page {}/{} -",
+        let status = format!(" - view:{} (C-/) - match:{} (C-e) - case:{} (C-t) - page {}/{} -",
             self.display_view(app.view()),
             self.display_match(app.regex_match()),
             self.display_case(app.case_sensitivity()),
