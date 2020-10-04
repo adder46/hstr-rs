@@ -1,5 +1,5 @@
 use ncurses::*;
-use regex::Regex;
+use regex::{escape, Regex, RegexBuilder};
 use crate::sort::sort;
 use crate::util::{read_file, write_file};
 
@@ -87,19 +87,50 @@ impl Application {
         }
     }
 
-    pub fn search(&mut self) {
-        if self.regex_match == false {
-            if self.case_sensitivity == true {
-                let search_string = self.search_string.clone();
-                self.get_entries_mut(self.view).retain(|x| x.contains(&search_string))
-            } else {
-                let search_string = self.search_string.clone().to_lowercase();
-                self.get_entries_mut(self.view).retain(|x| x.to_lowercase().contains(&search_string));
+    fn create_search_string_regex(&self) -> Option<Regex> {
+        match self.case_sensitivity {
+            true => {
+                match self.regex_match {
+                    true => {
+                        let regex = Regex::new(&self.search_string);
+                        match regex {
+                            Ok(r) => Some(r),
+                            Err(_) => None
+                        }
+                    },
+                    false => Some(Regex::new(&escape(&self.search_string)).unwrap())
+                }
+            },
+            false => {
+                match self.regex_match {
+                    true => {
+                        let regex = RegexBuilder::new(&self.search_string)
+                            .case_insensitive(true)
+                            .build();
+                        match regex {
+                            Ok(r) => Some(r),
+                            Err(_) => None 
+                        }
+                    },
+                    false => {
+                        let regex = RegexBuilder::new(&escape(&self.search_string))
+                            .case_insensitive(true)
+                            .build()
+                            .unwrap();
+                        return Some(regex);
+                    }
+                }
             }
-        } else {
-            let re = Regex::new(&self.search_string).unwrap();
-            self.get_entries_mut(self.view).retain(|x| re.is_match(x));
         }
+    }
+
+    pub fn search(&mut self) {
+        let search_string_regex = match self.create_search_string_regex() {
+            Some(r) => r,
+            None => { return; }
+        };
+        self.get_entries_mut(self.view)
+            .retain(|x| search_string_regex.is_match(x));
     }
 
     pub fn add_to_or_remove_from_favorites(&mut self, command: String) {

@@ -123,11 +123,15 @@ impl UserInterface {
     }
 
     fn get_substring_indexes<'a>(&self, string: &'a str, substring: &'a str) -> Vec<usize> {
-        Regex::new(substring)
-            .unwrap()
-            .find_iter(string)
+        let regex = Regex::new(substring);
+        let bla = match regex {
+            Ok(r) => r,
+            Err(_) => { return vec![]; }
+        };
+        let indexes = bla.find_iter(string)
             .flat_map(|mat| mat.range())
-            .collect()
+            .collect();
+        indexes
     }
 
     fn turn_page(&mut self, entries: &[String], direction: i32) {
