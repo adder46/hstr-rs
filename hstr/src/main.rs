@@ -75,8 +75,7 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&app);
                 }
                 _ => {
-                    app.search_string
-                        .push(std::char::from_u32(ch as u32).unwrap());
+                    app.search_string.push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();

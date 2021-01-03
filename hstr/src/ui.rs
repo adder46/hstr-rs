@@ -270,10 +270,7 @@ mod tests {
         let mut user_interface = UserInterface::new();
         let commands = app_with_fake_history.get_commands();
         user_interface.page = page;
-        assert_eq!(
-            user_interface.get_page(commands),
-            expected
-        );
+        assert_eq!(user_interface.get_page(commands), expected);
     }
 
     #[rstest(
