@@ -19,6 +19,7 @@ const CTRL_SLASH: u32 = 31;
 const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
+    nc::setlocale(nc::LcCategory::all, "");
     nc::initscr();
     nc::noecho();
     nc::keypad(nc::stdscr(), true);
