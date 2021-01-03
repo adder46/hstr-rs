@@ -21,6 +21,7 @@ pub struct Application {
     pub case_sensitivity: bool,
     pub search_string: String,
     pub shell: String,
+    pub raw_history: Vec<String>,
 }
 
 impl Application {
@@ -33,21 +34,23 @@ impl Application {
             case_sensitivity: false,
             search_string: String::new(),
             shell: shell.to_string(),
+            raw_history: Vec::new(),
         }
     }
 
     pub fn load_commands(&mut self) {
         let history = read_file(format!(".{}_history", self.shell)).unwrap();
         let commands = hashmap! {
-            View::All => history.clone().into_iter().unique().collect(),
-            View::Sorted => sort(history),
+            View::Sorted => sort(history.clone()),
             View::Favorites => read_file(
                 format!(
                     ".config/hstr-rs/.{}_favorites",
                     self.shell
                 )
-            ).unwrap()
+            ).unwrap(),
+            View::All => history.clone().into_iter().unique().collect(),
         };
+        self.raw_history = history;
         self.to_restore = Some(commands.clone());
         self.commands = Some(commands);
     }
@@ -110,6 +113,7 @@ impl Application {
                 .unwrap()
                 .retain(|x| *x != command);
         }
+        self.raw_history.retain(|x| *x != command);
     }
 
     pub fn toggle_case(&mut self) {

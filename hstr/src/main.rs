@@ -107,7 +107,7 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.prompt_for_deletion(&command);
                     if nc::getch() == Y {
                         app.delete_from_history(command);
-                        write_file(format!(".{}_history", shell), app.get_commands())?;
+                        write_file(format!(".{}_history", shell), &app.raw_history)?;
                     }
                     app.load_commands();
                     user_interface.populate_screen(&app);
