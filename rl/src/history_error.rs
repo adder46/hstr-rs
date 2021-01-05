@@ -2,14 +2,12 @@ use errno::errno;
 use std::fmt;
 
 #[derive(Debug)]
-/// Represents an error that has occurred within the History API.
 pub struct HistoryError {
     desc: String,
     detail: String,
 }
 
 impl HistoryError {
-    /// Create a HistoryError struct from the given description and detail.
     pub fn new<T>(desc: &str, detail: T) -> HistoryError
     where
         T: fmt::Display,
@@ -21,7 +19,6 @@ impl HistoryError {
     }
 }
 
-/// Implemented as 'self.desc: self.detail'.
 impl fmt::Display for HistoryError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.desc, self.detail)
