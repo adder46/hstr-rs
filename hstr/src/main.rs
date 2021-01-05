@@ -10,6 +10,7 @@ mod sort;
 mod ui;
 mod util;
 
+const CTRL_C: u32 = 3;
 const CTRL_E: u32 = 5;
 const CTRL_F: u32 = 6;
 const TAB: u32 = 9;
@@ -28,6 +29,7 @@ fn main() -> Result<(), std::io::Error> {
     let f = unsafe { libc::fopen(device_c, mode_c) };
     nc::newterm(None, f, f);
     nc::noecho();
+    nc::raw();
     nc::keypad(nc::stdscr(), true);
     let shell = get_shell().get_name();
     let mut app = Application::new(shell);
@@ -39,6 +41,13 @@ fn main() -> Result<(), std::io::Error> {
         let user_input = nc::get_wch();
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
+                CTRL_C => {
+                    if app.dirty_history {
+                        util::echo(f, "history -r".to_string());
+                        util::echo(f, "\n".to_string());
+                    }
+                    break;
+                }
                 CTRL_E => {
                     app.toggle_regex_mode();
                     user_interface.selected = 0;
@@ -77,8 +86,10 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&app);
                 }
                 ESC => {
-                    util::echo(f, String::from("history -r"));
-                    util::echo(f, "\n".to_string());
+                    if app.dirty_history {
+                        util::echo(f, "history -r".to_string());
+                        util::echo(f, "\n".to_string());
+                    }
                     break;
                 }
                 CTRL_SLASH => {

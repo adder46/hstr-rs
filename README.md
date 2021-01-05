@@ -40,25 +40,15 @@ export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
 
 ## Usage
 ​
-The most convenient option if you're using bash is to put the function below in your `~/.bashrc`:
+The most convenient option if you're using bash is to put this alias in your `~/.bash_aliases`:
 
 ```sh
-hh() {
-    history | hstr-rs
-    history -r
-}
+alias hh="history | hstr-rs
 ```
 
 Then invoke the program with `hh`.
 
-When it comes to zsh, its `history` command significantly differs from the one that can be found on bash. zsh also lacks `$PROMPT_COMMAND`, which means that all major features of hstr-rs will work on zsh too, however, you might experience some unexpected behavior when deleting commands from history. In any case, if you want to use it with zsh, add this to `~/.zshenv`:
-
-```sh
-hh() {
-    history 0 | hstr-rs
-    fc -R
-}
-```
+When it comes to zsh, its `history` command significantly differs from the one that can be found on bash. zsh also lacks `$PROMPT_COMMAND`, which means that all major features of hstr-rs will work on zsh too, however, you might experience some unexpected behavior when deleting commands from history. In any case, if you want to use it with zsh, add the same alias to `~/.zshrc`:
 ​
 ## Screencast
 

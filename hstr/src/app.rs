@@ -25,6 +25,7 @@ pub struct Application {
     pub search_string: String,
     pub shell: String,
     pub raw_history: Vec<String>,
+    pub dirty_history: bool,
     buf: String,
 }
 
@@ -39,6 +40,7 @@ impl Application {
             search_string: String::new(),
             shell: shell.to_string(),
             raw_history: Vec::new(),
+            dirty_history: false,
             buf: String::new(),
         }
     }
@@ -170,6 +172,7 @@ impl Application {
                 .join(PathBuf::from(format!(".{}_history", self.shell))),
         )))
         .expect("Unable to write history to file.");
+        self.dirty_history = true;
         Ok(())
     }
 
