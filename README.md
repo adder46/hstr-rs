@@ -55,7 +55,7 @@ When it comes to zsh, its `history` command significantly differs from the one t
 
 ```sh
 hh() {
-    history | hstr-rs
+    history 0 | hstr-rs
     fc -R
 }
 ```
