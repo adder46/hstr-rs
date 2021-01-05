@@ -8,7 +8,8 @@ use ncurses as nc;
 
 use regex::Regex;
 
-const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, ESC quit, C-f add/rm fav";
+const LABEL: &str =
+    "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
 pub struct UserInterface {
     pub page: i32,
