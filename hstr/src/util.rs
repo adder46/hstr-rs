@@ -1,4 +1,4 @@
-use libc::{ioctl, TIOCSTI};
+use libc::{fileno, ioctl, FILE, TIOCSTI};
 use std::env;
 use std::fs::{create_dir_all, write, File};
 use std::io::{BufRead, BufReader};
@@ -23,10 +23,10 @@ pub fn write_file(path: String, thing: &[String]) -> Result<(), std::io::Error> 
     Ok(())
 }
 
-pub fn echo(command: String) {
+pub fn echo(f: *mut FILE, command: String) {
     unsafe {
         for byte in command.as_bytes() {
-            ioctl(0, TIOCSTI, byte);
+            ioctl(fileno(f), TIOCSTI, byte);
         }
     }
 }

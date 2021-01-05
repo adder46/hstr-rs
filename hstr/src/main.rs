@@ -3,6 +3,7 @@ use crate::ui::UserInterface;
 use crate::util::write_file;
 use ncurses as nc;
 use setenv::get_shell;
+use std::ffi::CString;
 
 mod app;
 mod sort;
@@ -20,12 +21,17 @@ const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
     nc::setlocale(nc::LcCategory::all, "");
-    nc::initscr();
+    let device = CString::new("/dev/tty").unwrap();
+    let device_c = device.as_ptr() as *const libc::c_char;
+    let mode = CString::new("r+").unwrap();
+    let mode_c = mode.as_ptr() as *const libc::c_char;
+    let f = unsafe { libc::fopen(device_c, mode_c) };
+    nc::newterm(None, f, f);
     nc::noecho();
     nc::keypad(nc::stdscr(), true);
     let shell = get_shell().get_name();
     let mut app = Application::new(shell);
-    app.load_commands();
+    app.load_commands()?;
     let mut user_interface = UserInterface::new();
     user_interface.init_color_pairs();
     user_interface.populate_screen(&app);
@@ -54,21 +60,25 @@ fn main() -> Result<(), std::io::Error> {
                 TAB => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    util::echo(command);
+                    util::echo(f, command);
                     break;
                 }
                 ENTER => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    util::echo(command);
-                    util::echo("\n".to_string());
+                    util::echo(f, command);
+                    util::echo(f, "\n".to_string());
                     break;
                 }
                 CTRL_T => {
                     app.toggle_case();
                     user_interface.populate_screen(&app);
                 }
-                ESC => break,
+                ESC => {
+                    util::echo(f, String::from("history -r"));
+                    util::echo(f, "\n".to_string());
+                    break;
+                }
                 CTRL_SLASH => {
                     app.toggle_view();
                     user_interface.selected = 0;
@@ -106,10 +116,10 @@ fn main() -> Result<(), std::io::Error> {
                     let command = user_interface.get_selected(&commands);
                     user_interface.prompt_for_deletion(&command);
                     if nc::getch() == Y {
-                        app.delete_from_history(command);
-                        write_file(format!(".{}_history", shell), &app.raw_history)?;
+                        app.delete_from_history(command)?;
                     }
-                    app.load_commands();
+                    app.reload_commands();
+                    nc::clear();
                     user_interface.populate_screen(&app);
                 }
                 nc::KEY_NPAGE => {

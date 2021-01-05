@@ -4,14 +4,17 @@
 
 **hstr** is shell history suggest box. Like hstr, but with pages.
 
-It was initially made for bash, but it supports zsh and ksh, too. If you want to use it with tcsh, make sure tcsh saves its history to `~/.tcsh_history`.
+It is primarily designed to be used with bash, however, it can be used with other shells, too, such as zsh (bear in mind a small issue mentioned in **Usage**).
+hstr-rs has not been tested with other shells, such as fish, ksh, and tcsh.
 ​
 ## Installation
 ​
-Make sure you have ncurses packages installed.
+Make sure you have ncurses and readline packages installed.
+
+If on Ubuntu:
 ​
 ```
-sudo apt install libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev
+sudo apt install libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev libreadline5 libreadline-dev
 ```
 ​
 Then run:
@@ -37,13 +40,26 @@ export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
 
 ## Usage
 ​
-Making an alias should be the most convenient option, so you can add this to `~/.bash_aliases`:
+The most convenient option if you're using bash is to put the function below in your `~/.bashrc`:
 
 ```sh
-alias hh=hstr-rs
+hh() {
+    history | hstr-rs
+    history -r
+}
+```
+
+Then invoke the program with `hh`.
+
+When it comes to zsh, its `history` command significantly differs from the one that can be found on bash. zsh also lacks `$PROMPT_COMMAND`, which means that all major features of hstr-rs will work on zsh too, however, you might experience some unexpected behavior when deleting commands from history. In any case, if you want to use it with zsh, add this to `~/.zshenv`:
+
+```sh
+hh() {
+    history | hstr-rs
+    fc -R
+}
 ```
 ​
 ## Screencast
 
 ![screenshot](hstr-rs.gif)
-

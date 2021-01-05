@@ -3,7 +3,10 @@ use crate::util::read_file;
 use itertools::Itertools;
 use maplit::hashmap;
 use regex::{escape, Regex, RegexBuilder};
+use rl::*;
 use std::collections::HashMap;
+use std::io::{self, Read};
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum View {
@@ -22,6 +25,7 @@ pub struct Application {
     pub search_string: String,
     pub shell: String,
     pub raw_history: Vec<String>,
+    buf: String,
 }
 
 impl Application {
@@ -35,11 +39,18 @@ impl Application {
             search_string: String::new(),
             shell: shell.to_string(),
             raw_history: Vec::new(),
+            buf: String::new(),
         }
     }
 
-    pub fn load_commands(&mut self) {
-        let history = read_file(format!(".{}_history", self.shell)).unwrap();
+    pub fn load_commands(&mut self) -> Result<(), io::Error> {
+        io::stdin().read_to_string(&mut self.buf)?;
+        let history = self
+            .buf
+            .clone()
+            .lines()
+            .map(|x| x.split_whitespace().skip(1).join(" "))
+            .collect::<Vec<String>>();
         let commands = hashmap! {
             View::Sorted => sort(history.clone()),
             View::Favorites => read_file(
@@ -51,6 +62,22 @@ impl Application {
             View::All => history.clone().into_iter().unique().collect(),
         };
         self.raw_history = history;
+        self.to_restore = Some(commands.clone());
+        self.commands = Some(commands);
+        Ok(())
+    }
+
+    pub fn reload_commands(&mut self) {
+        let commands = hashmap! {
+            View::Sorted => sort(self.raw_history.clone()),
+            View::Favorites => read_file(
+                format!(
+                    ".config/hstr-rs/.{}_favorites",
+                    self.shell
+                )
+            ).unwrap(),
+            View::All => self.raw_history.clone().into_iter().unique().collect(),
+        };
         self.to_restore = Some(commands.clone());
         self.commands = Some(commands);
     }
@@ -104,7 +131,7 @@ impl Application {
         }
     }
 
-    pub fn delete_from_history(&mut self, command: String) {
+    pub fn delete_from_history(&mut self, command: String) -> Result<(), io::Error> {
         for view in [View::Sorted, View::Favorites, View::All].iter() {
             self.commands
                 .as_mut()
@@ -114,6 +141,36 @@ impl Application {
                 .retain(|x| *x != command);
         }
         self.raw_history.retain(|x| *x != command);
+        for entry in self.raw_history.iter() {
+            add(entry);
+        }
+        for entry in self
+            .buf
+            .clone()
+            .lines()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .iter()
+            .rev()
+        {
+            let idx = entry
+                .split_whitespace()
+                .next()
+                .unwrap()
+                .parse::<i32>()
+                .unwrap();
+            let cmd = entry.split_whitespace().skip(1).join(" ");
+            if cmd == command {
+                free_entry(remove(idx)).expect("Unable to free history entry.");
+            }
+        }
+        write(Some(&Path::new(
+            &dirs::home_dir()
+                .unwrap()
+                .join(PathBuf::from(format!(".{}_history", self.shell))),
+        )))
+        .expect("Unable to write history to file.");
+        Ok(())
     }
 
     pub fn toggle_case(&mut self) {
@@ -281,9 +338,13 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn delete_from_history(command: String, mut app_with_fake_history: Application) {
-        app_with_fake_history.delete_from_history(command.clone());
+    fn delete_from_history(
+        command: String,
+        mut app_with_fake_history: Application,
+    ) -> Result<(), io::Error> {
+        app_with_fake_history.delete_from_history(command.clone())?;
         assert!(!app_with_fake_history.get_commands().contains(&command));
+        Ok(())
     }
 
     #[rstest(

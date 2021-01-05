@@ -8,8 +8,7 @@ use ncurses as nc;
 
 use regex::Regex;
 
-const LABEL: &str =
-    "Type to filter, UP/DOWN move, RET/TAB select, DEL remove, ESC quit, C-f add/rm fav";
+const LABEL: &str = "Type to filter, UP/DOWN move, RET/TAB select, ESC quit, C-f add/rm fav";
 
 pub struct UserInterface {
     pub page: i32,
@@ -165,17 +164,6 @@ impl UserInterface {
         )
     }
 
-    pub fn prompt_for_deletion(&self, command: &str) {
-        nc::mvaddstr(1, 0, &format!("{1:0$}", nc::COLS() as usize, ""));
-        nc::attron(nc::COLOR_PAIR(6));
-        nc::mvaddstr(
-            1,
-            1,
-            &format!("Do you want to delete all occurences of {}? y/n", command),
-        );
-        nc::attroff(nc::COLOR_PAIR(6));
-    }
-
     fn total_pages(&self, commands: &[String]) -> i32 {
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
@@ -221,6 +209,17 @@ impl UserInterface {
             true => String::from("on"),
             false => String::from("off"),
         }
+    }
+
+    pub fn prompt_for_deletion(&self, command: &str) {
+        nc::mvaddstr(1, 0, &format!("{1:0$}", nc::COLS() as usize, ""));
+        nc::attron(nc::COLOR_PAIR(6));
+        nc::mvaddstr(
+            1,
+            1,
+            &format!("Do you want to delete all occurences of {}? y/n", command),
+        );
+        nc::attroff(nc::COLOR_PAIR(6));
     }
 }
 
