@@ -56,6 +56,8 @@ fn main() -> Result<(), std::io::Error> {
                             .get(&app::View::Favorites)
                             .unwrap(),
                     )?;
+                    nc::clear();
+                    user_interface.populate_screen(&app);
                 }
                 TAB => {
                     let commands = app.get_commands();
@@ -82,6 +84,7 @@ fn main() -> Result<(), std::io::Error> {
                 CTRL_SLASH => {
                     app.toggle_view();
                     user_interface.selected = 0;
+                    nc::clear();
                     user_interface.populate_screen(&app);
                 }
                 _ => {
