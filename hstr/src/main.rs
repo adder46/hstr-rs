@@ -43,8 +43,17 @@ fn main() -> Result<(), std::io::Error> {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_C => {
                     if app.dirty_history {
-                        util::echo(f, "history -r".to_string());
-                        util::echo(f, "\n".to_string());
+                        match shell {
+                            "bash" => {
+                                util::echo(f, "history -r".to_string());
+                                util::echo(f, "\n".to_string());
+                            }
+                            "zsh" => {
+                                util::echo(f, "fc -R".to_string());
+                                util::echo(f, "\n".to_string());
+                            }
+                            _ => {}
+                        }
                     }
                     break;
                 }
@@ -87,8 +96,17 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 ESC => {
                     if app.dirty_history {
-                        util::echo(f, "history -r".to_string());
-                        util::echo(f, "\n".to_string());
+                        match shell {
+                            "bash" => {
+                                util::echo(f, "history -r".to_string());
+                                util::echo(f, "\n".to_string());
+                            }
+                            "zsh" => {
+                                util::echo(f, "fc -R".to_string());
+                                util::echo(f, "\n".to_string());
+                            }
+                            _ => {}
+                        }
                     }
                     break;
                 }
