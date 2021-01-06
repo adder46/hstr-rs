@@ -2,7 +2,7 @@
 
 ![build status](https://github.com/adder46/hstr-rs/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/adder46/hstr-rs/branch/master/graph/badge.svg?token=0BZM100XU5)](https://codecov.io/gh/adder46/hstr-rs)
 
-**hstr** is shell history suggest box. Like hstr, but with pages.
+**hstr-rs** is shell history suggest box. Like hstr, but with pages.
 
 It is primarily designed to be used with bash, however, it can be used with other shells, too, such as zsh (bear in mind a small issue mentioned in **Usage**).
 hstr-rs has not been tested with other shells, such as fish, ksh, and tcsh.
