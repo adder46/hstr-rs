@@ -93,7 +93,10 @@ impl UserInterface {
                     self.display_view(app.view),
                     self.display_regex_mode(app.regex_mode),
                     self.display_case(app.case_sensitivity),
-                    self.page,
+                    match self.total_pages(app.get_commands()) {
+                        0 => 0,
+                        _ => self.page,
+                    },
                     self.total_pages(app.get_commands())
                 )
             ),
@@ -179,7 +182,7 @@ impl UserInterface {
         }
     }
 
-    fn get_page_size(&self, commands: &[String]) -> i32 {
+    pub fn get_page_size(&self, commands: &[String]) -> i32 {
         self.get_page(commands).len() as i32
     }
 

@@ -1,4 +1,4 @@
-use crate::app::Application;
+use crate::app::{Application, View};
 use crate::ui::UserInterface;
 use crate::util::write_file;
 use ncurses as nc;
@@ -65,6 +65,12 @@ fn main() -> Result<(), std::io::Error> {
                 CTRL_F => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
+                    if app.view == View::Favorites {
+                        let page_size = user_interface.get_page_size(&commands) - 1;
+                        if user_interface.selected == page_size {
+                            user_interface.selected -= 1;
+                        }
+                    }
                     app.add_or_rm_fav(command);
                     write_file(
                         format!(".config/hstr-rs/.{}_favorites", shell),

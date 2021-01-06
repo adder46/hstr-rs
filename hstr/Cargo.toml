@@ -1,6 +1,6 @@
 [package]
 name = "hstr-rs"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["adder46 <dedmauz69@gmail.com>"]
 edition = "2018"
 
