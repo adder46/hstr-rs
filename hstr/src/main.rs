@@ -48,10 +48,7 @@ fn main() -> Result<(), std::io::Error> {
                                 util::echo(f, "history -r".to_string());
                                 util::echo(f, "\n".to_string());
                             }
-                            "zsh" => {
-                                util::echo(f, "fc -R".to_string());
-                                util::echo(f, "\n".to_string());
-                            }
+                            "zsh" => {}
                             _ => {}
                         }
                     }
@@ -107,10 +104,7 @@ fn main() -> Result<(), std::io::Error> {
                                 util::echo(f, "history -r".to_string());
                                 util::echo(f, "\n".to_string());
                             }
-                            "zsh" => {
-                                util::echo(f, "fc -R".to_string());
-                                util::echo(f, "\n".to_string());
-                            }
+                            "zsh" => {}
                             _ => {}
                         }
                     }
@@ -119,6 +113,7 @@ fn main() -> Result<(), std::io::Error> {
                 CTRL_SLASH => {
                     app.toggle_view();
                     user_interface.selected = 0;
+                    user_interface.page = 1;
                     nc::clear();
                     user_interface.populate_screen(&app);
                 }
@@ -154,6 +149,10 @@ fn main() -> Result<(), std::io::Error> {
                     let command = user_interface.get_selected(&commands);
                     user_interface.prompt_for_deletion(&command);
                     if nc::getch() == Y {
+                        let page_size = user_interface.get_page_size(&commands) - 1;
+                        if user_interface.selected == page_size {
+                            user_interface.selected -= 1;
+                        }
                         app.delete_from_history(command)?;
                     }
                     app.reload_commands();

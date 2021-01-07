@@ -2,10 +2,9 @@
 
 ![build status](https://github.com/adder46/hstr-rs/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/adder46/hstr-rs/branch/master/graph/badge.svg?token=0BZM100XU5)](https://codecov.io/gh/adder46/hstr-rs)
 
-**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use history files as a data source, rather, it expects its input to come from stdin. This means that hstr-rs doesn't need to do weird stuff such as unmetafying zsh history files to provide proper Unicode support, which original hstr has failed to do up to this point. Also, hstr-rs does not require you to edit your `$PROMPT_COMMAND`. All this combined avoids potentially disastrous behavior.
+**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use history files as a data source, rather, it expects its input to come from stdin. Also, hstr-rs does not require you to tweak your `$PROMPT_COMMAND`. This means that hstr-rs provides Unicode support out of the box, while avoiding potentially disastrous behavior at the same time.
 
-hstr-rs is primarily designed to be used with bash, however, its crucial features work with other shells, too, such as zsh (bear in mind [issue #14](https://github.com/adder46/hstr-rs/issues/14)).
-hstr-rs has not been tested with other shells, such as fish, ksh, and tcsh.
+hstr-rs is primarily designed to be used with bash, however, there is an ongoing effort to support other shells too, among which zsh is the priority. Contributors are very welcome.
 ​
 ## Installation
 ​
@@ -46,8 +45,11 @@ alias hh="hstr-rs < <(history)"
 
 Then invoke the program with `hh`.
 
-When it comes to zsh, its `history` command significantly differs from the one that can be found on bash. This means that all major features of hstr-rs will work on zsh too, however, you might experience some unexpected behavior when deleting commands from history. In any case, if you want to try it out with zsh, add the same alias to `~/.zshrc`.
-​
 ## Screencast
 
 ![screenshot](hstr-rs.gif)
+
+
+## Licensing
+
+Licensed under the [MIT License](https://opensource.org/licenses/MIT). For details, see [LICENSE](https://github.com/adder46/hstr-rs/blob/master/LICENSE).
