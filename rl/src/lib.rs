@@ -83,12 +83,21 @@ pub fn free_entry(entry: &mut ext_readline::HistoryEntry) -> Result<(), *mut c_v
     }
 }
 
+#[cfg(not(target_arch = "arm"))]
 pub fn write(path: Option<&Path>) -> Result<i32, HistoryError> {
     with_path_ptr(path, |ptr| unsafe {
         history_error::gen_result(ext_readline::write_history(ptr))
     })
 }
 
+#[cfg(target_arch = "arm")]
+pub fn write(path: Option<&Path>) -> Result<i32, HistoryError> {
+    with_path_ptr(path, |ptr| unsafe {
+        history_error::gen_result(ext_readline::write_history(ptr as *const u8))
+    })
+}
+
+#[cfg(not(target_arch = "arm"))]
 fn with_path_ptr<F>(path: Option<&Path>, f: F) -> Result<i32, HistoryError>
 where
     F: Fn(*const i8) -> Result<i32, HistoryError>,
@@ -98,6 +107,29 @@ where
             Some(p) => {
                 if let Ok(cs) = CString::new(p) {
                     return f(cs.as_ptr());
+                }
+            }
+            None => {
+                return Err(HistoryError::new(
+                    "History Error",
+                    "Unable to determine path!",
+                ))
+            }
+        }
+    }
+    f(ptr::null())
+}
+
+#[cfg(target_arch = "arm")]
+fn with_path_ptr<F>(path: Option<&Path>, f: F) -> Result<i32, HistoryError>
+where
+    F: Fn(*const i8) -> Result<i32, HistoryError>,
+{
+    if let Some(p) = path {
+        match p.to_str() {
+            Some(p) => {
+                if let Ok(cs) = CString::new(p) {
+                    return f(cs.as_ptr() as *const i8);
                 }
             }
             None => {
