@@ -169,6 +169,10 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.turn_page(commands, -1);
                     user_interface.populate_screen(&app);
                 }
+                nc::KEY_RESIZE => {
+                    nc::clear();
+                    user_interface.populate_screen(&app);
+                }
                 _ => {}
             },
         }
