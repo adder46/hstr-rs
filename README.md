@@ -2,7 +2,7 @@
 
 ![build status](https://github.com/adder46/hstr-rs/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/adder46/hstr-rs/branch/master/graph/badge.svg?token=0BZM100XU5)](https://codecov.io/gh/adder46/hstr-rs)
 
-**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use history files as a data source, rather, it expects its input to come from stdin. Also, hstr-rs does not require you to tweak your `$PROMPT_COMMAND`. This means that hstr-rs provides Unicode support out of the box, while avoiding potentially disastrous behavior at the same time.
+**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use history files as a data source, rather, it expects its input to come from stdin. This means that hstr-rs provides Unicode support out of the box, while avoiding potentially disastrous behavior at the same time.
 
 hstr-rs is primarily designed to be used with bash, however, there is an ongoing effort to support other shells too, among which zsh is the priority. Contributors are very welcome.
 ​
@@ -33,6 +33,8 @@ HISTCONTROL=ignoreboth
 HISTFILESIZE=1000000
 # increase history size
 HISTSIZE=${HISTFILESIZE}
+# append NEW entries from memory to .bash_history
+export PROMPT_COMMAND="history -a"
 ```
 
 ## Usage
