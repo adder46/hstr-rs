@@ -42,15 +42,8 @@ fn main() -> Result<(), std::io::Error> {
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_C => {
-                    if app.dirty_history {
-                        match shell {
-                            "bash" => {
-                                util::echo(f, "history -r".to_string());
-                                util::echo(f, "\n".to_string());
-                            }
-                            "zsh" => {}
-                            _ => {}
-                        }
+                    if app.dirty_history && shell == "bash" {
+                        util::echo(f, "history -r\n".to_string());
                     }
                     break;
                 }
@@ -89,8 +82,7 @@ fn main() -> Result<(), std::io::Error> {
                 ENTER => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    util::echo(f, command);
-                    util::echo(f, "\n".to_string());
+                    util::echo(f, format!("{}\n", command));
                     break;
                 }
                 CTRL_T => {
@@ -98,15 +90,8 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&app);
                 }
                 ESC => {
-                    if app.dirty_history {
-                        match shell {
-                            "bash" => {
-                                util::echo(f, "history -r".to_string());
-                                util::echo(f, "\n".to_string());
-                            }
-                            "zsh" => {}
-                            _ => {}
-                        }
+                    if app.dirty_history && shell == "bash" {
+                        util::echo(f, "history -r\n".to_string());
                     }
                     break;
                 }

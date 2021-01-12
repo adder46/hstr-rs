@@ -1,7 +1,8 @@
 use libc::{fileno, ioctl, FILE, TIOCSTI};
+use regex::Regex;
 use std::env;
 use std::fs::{create_dir_all, write, File};
-use std::io::{BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 
 pub fn read_file(path: String) -> Result<Vec<String>, std::io::Error> {
@@ -37,4 +38,33 @@ pub fn get_shell_prompt() -> String {
         env::var("USER").unwrap(),
         gethostname::gethostname().into_string().unwrap()
     )
+}
+
+pub fn read_zsh_history() -> Result<String, io::Error> {
+    let mut file = File::open(dirs::home_dir().unwrap().join(".zsh_history"))?;
+    let mut contents = Vec::new();
+    file.read_to_end(&mut contents)?;
+    let unmetafied_history = zsh_unmetafy(contents);
+    Ok(remove_timestamps(
+        String::from_utf8(unmetafied_history).unwrap(),
+    ))
+}
+
+fn remove_timestamps(contents: String) -> String {
+    let r = Regex::new(r"^: \d{10}:\d;").unwrap();
+    contents
+        .lines()
+        .map(|x| r.replace(x, "").into())
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
+pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
+    for index in (0..contents.len()).rev() {
+        if contents[index] == 0x83 {
+            contents.remove(index);
+            contents[index] ^= 32;
+        }
+    }
+    contents.to_vec()
 }

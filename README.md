@@ -2,9 +2,9 @@
 
 ![build status](https://github.com/adder46/hstr-rs/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/adder46/hstr-rs/branch/master/graph/badge.svg?token=0BZM100XU5)](https://codecov.io/gh/adder46/hstr-rs)
 
-**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use history files as a data source, rather, it expects its input to come from stdin. This means that hstr-rs provides Unicode support out of the box, while avoiding potentially disastrous behavior at the same time.
+**hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs does not use bash history file as a data source - rather, it expects its input to come from stdin. With zsh, hstr-rs has to use the history file as the source of truth, which implies doing weird stuff such as unmetafying the zsh history file. However, in contrast to the original hstr, this means that hstr-rs provides Unicode support out of the box on both bash and zsh, while avoiding potentially disastrous bash behavior by not reading from the history file and not advertising using `history -n` in `$PROMPT_COMMAND`.
 
-hstr-rs is primarily designed to be used with bash, however, there is an ongoing effort to support other shells too, among which zsh is the priority. Contributors are very welcome.
+hstr-rs was initially designed to be used with bash, but it works on zsh, too. There is an ongoing effort to support other shells too. Contributors are very welcome.
 ​
 ## Installation
 ​
@@ -33,8 +33,8 @@ HISTCONTROL=ignoreboth
 HISTFILESIZE=1000000
 # increase history size
 HISTSIZE=${HISTFILESIZE}
-# append NEW entries from memory to .bash_history
-export PROMPT_COMMAND="history -a"
+# append new entries from memory to .bash_history
+export PROMPT_COMMAND="history -a; ${PROMPT_COMMAND}"
 ```
 
 ## Usage
@@ -50,7 +50,6 @@ Then invoke the program with `hh`.
 ## Screencast
 
 ![screenshot](hstr-rs.gif)
-
 
 ## Licensing
 

@@ -1,12 +1,12 @@
 use crate::sort::sort;
-use crate::util::read_file;
+use crate::util::{read_file, read_zsh_history, write_file};
 use itertools::Itertools;
 use maplit::hashmap;
 use regex::{escape, Regex, RegexBuilder};
 use rl::*;
 use std::collections::HashMap;
 use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum View {
@@ -46,26 +46,45 @@ impl Application {
     }
 
     pub fn load_commands(&mut self) -> Result<(), io::Error> {
-        io::stdin().read_to_string(&mut self.buf)?;
-        let history = self
-            .buf
-            .clone()
-            .lines()
-            .map(|x| x.split_whitespace().skip(1).join(" "))
-            .collect::<Vec<String>>();
-        let commands = hashmap! {
-            View::Sorted => sort(history.clone()),
-            View::Favorites => read_file(
-                format!(
-                    ".config/hstr-rs/.{}_favorites",
-                    self.shell
-                )
-            ).unwrap(),
-            View::All => history.clone().into_iter().unique().collect(),
-        };
-        self.raw_history = history;
-        self.to_restore = Some(commands.clone());
-        self.commands = Some(commands);
+        match self.shell.as_str() {
+            "bash" => {
+                io::stdin().read_to_string(&mut self.buf)?;
+                let history = self
+                    .buf
+                    .clone()
+                    .lines()
+                    .map(|x| x.split_whitespace().skip(1).join(" "))
+                    .collect::<Vec<String>>();
+                let commands = hashmap! {
+                    View::Sorted => sort(history.clone()),
+                    View::Favorites => read_file(
+                        ".config/hstr-rs/.bash_favorites".to_string()
+                    ).unwrap(),
+                    View::All => history.clone().into_iter().unique().collect(),
+                };
+                self.raw_history = history;
+                self.to_restore = Some(commands.clone());
+                self.commands = Some(commands);
+            }
+            "zsh" => {
+                let history = read_zsh_history()
+                    .unwrap()
+                    .split('\n')
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>();
+                let commands = hashmap! {
+                    View::Sorted => sort(history.clone()),
+                    View::Favorites => read_file(
+                        ".config/hstr-rs/.zsh_favorites".to_string()
+                    ).unwrap(),
+                    View::All => history.clone().into_iter().unique().collect(),
+                };
+                self.raw_history = history;
+                self.to_restore = Some(commands.clone());
+                self.commands = Some(commands);
+            }
+            _ => {}
+        }
         Ok(())
     }
 
@@ -143,35 +162,41 @@ impl Application {
                 .retain(|x| *x != command);
         }
         self.raw_history.retain(|x| *x != command);
-        for entry in self.raw_history.iter() {
-            add(entry);
-        }
-        for entry in self
-            .buf
-            .clone()
-            .lines()
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>()
-            .iter()
-            .rev()
-        {
-            let idx = entry
-                .split_whitespace()
-                .next()
-                .unwrap()
-                .parse::<i32>()
-                .unwrap();
-            let cmd = entry.split_whitespace().skip(1).join(" ");
-            if cmd == command {
-                free_entry(remove(idx)).expect("Unable to free history entry.");
+        match self.shell.as_str() {
+            "bash" => {
+                for entry in self.raw_history.iter() {
+                    add(entry);
+                }
+                for entry in self
+                    .buf
+                    .clone()
+                    .lines()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .iter()
+                    .rev()
+                {
+                    let idx = entry
+                        .split_whitespace()
+                        .next()
+                        .unwrap()
+                        .parse::<i32>()
+                        .unwrap();
+                    let cmd = entry.split_whitespace().skip(1).join(" ");
+                    if cmd == command {
+                        free_entry(remove(idx)).expect("Unable to free history entry.");
+                    }
+                }
+                write(Some(&Path::new(
+                    &dirs::home_dir().unwrap().join(".bash_history"),
+                )))
+                .expect("Unable to write history to file.");
             }
+            "zsh" => {
+                write_file(".zsh_history".to_string(), &self.raw_history)?;
+            }
+            _ => {}
         }
-        write(Some(&Path::new(
-            &dirs::home_dir()
-                .unwrap()
-                .join(PathBuf::from(format!(".{}_history", self.shell))),
-        )))
-        .expect("Unable to write history to file.");
         self.dirty_history = true;
         Ok(())
     }
