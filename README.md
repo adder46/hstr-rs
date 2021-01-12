@@ -4,7 +4,7 @@
 
 **hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs has pages and provides Unicode support out of the box on both bash and zsh.
 
-hstr-rs was initially designed to be used with bash, but it also works on zsh, too. There is an ongoing effort to support other shells too. Contributors are very welcome.
+There is an ongoing effort to support other shells too. Contributors are very welcome.
 ​
 ## Installation
 ​
@@ -34,7 +34,7 @@ HISTFILESIZE=1000000
 # increase history size
 HISTSIZE=${HISTFILESIZE}
 # append new entries from memory to .bash_history
-export PROMPT_COMMAND="history -a; ${PROMPT_COMMAND}"
+export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
 ```
 
 ## Usage
