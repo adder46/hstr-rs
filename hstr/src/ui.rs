@@ -44,13 +44,11 @@ impl UserInterface {
             );
             let substring_indexes = self.get_substring_indexes(&entry, &app.search_string);
             if !substring_indexes.is_empty() {
-                for (idx, letter) in entry.chars().enumerate() {
+                for (idx, letter) in entry.char_indices() {
                     if substring_indexes.contains(&idx) {
                         nc::attron(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                        nc::mvaddch(index as i32 + 3, idx as i32 + 1, letter as nc::chtype);
+                        nc::mvaddstr(index as i32 + 3, idx as i32 + 1, &letter.to_string());
                         nc::attroff(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                    } else {
-                        nc::mvaddch(index as i32 + 3, idx as i32 + 1, letter as nc::chtype);
                     }
                 }
             }

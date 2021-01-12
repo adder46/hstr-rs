@@ -1,4 +1,4 @@
-use libc::{fileno, ioctl, FILE, TIOCSTI};
+use libc::{ioctl, TIOCSTI};
 use regex::Regex;
 use std::env;
 use std::fs::{create_dir_all, write, File};
@@ -24,10 +24,10 @@ pub fn write_file(path: String, thing: &[String]) -> Result<(), std::io::Error> 
     Ok(())
 }
 
-pub fn echo(f: *mut FILE, command: String) {
+pub fn echo(command: String) {
     unsafe {
         for byte in command.as_bytes() {
-            ioctl(fileno(f), TIOCSTI, byte);
+            ioctl(0, TIOCSTI, byte);
         }
     }
 }

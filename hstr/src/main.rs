@@ -3,14 +3,12 @@ use crate::ui::UserInterface;
 use crate::util::write_file;
 use ncurses as nc;
 use setenv::get_shell;
-use std::ffi::CString;
 
 mod app;
 mod sort;
 mod ui;
 mod util;
 
-const CTRL_C: u32 = 3;
 const CTRL_E: u32 = 5;
 const CTRL_F: u32 = 6;
 const TAB: u32 = 9;
@@ -22,14 +20,8 @@ const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
     nc::setlocale(nc::LcCategory::all, "");
-    let device = CString::new("/dev/tty").unwrap();
-    let device_c = device.as_ptr() as *const libc::c_char;
-    let mode = CString::new("r+").unwrap();
-    let mode_c = mode.as_ptr() as *const libc::c_char;
-    let f = unsafe { libc::fopen(device_c, mode_c) };
-    nc::newterm(None, f, f);
+    nc::initscr();
     nc::noecho();
-    nc::raw();
     nc::keypad(nc::stdscr(), true);
     let shell = get_shell().get_name();
     let mut app = Application::new(shell);
@@ -41,12 +33,6 @@ fn main() -> Result<(), std::io::Error> {
         let user_input = nc::get_wch();
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
-                CTRL_C => {
-                    if app.dirty_history && shell == "bash" {
-                        util::echo(f, "history -r\n".to_string());
-                    }
-                    break;
-                }
                 CTRL_E => {
                     app.toggle_regex_mode();
                     user_interface.selected = 0;
@@ -76,25 +62,20 @@ fn main() -> Result<(), std::io::Error> {
                 TAB => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    util::echo(f, command);
+                    util::echo(command);
                     break;
                 }
                 ENTER => {
                     let commands = app.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    util::echo(f, format!("{}\n", command));
+                    util::echo(format!("{}\n", command));
                     break;
                 }
                 CTRL_T => {
                     app.toggle_case();
                     user_interface.populate_screen(&app);
                 }
-                ESC => {
-                    if app.dirty_history && shell == "bash" {
-                        util::echo(f, "history -r\n".to_string());
-                    }
-                    break;
-                }
+                ESC => break,
                 CTRL_SLASH => {
                     app.toggle_view();
                     user_interface.selected = 0;
@@ -138,7 +119,8 @@ fn main() -> Result<(), std::io::Error> {
                         if user_interface.selected == page_size {
                             user_interface.selected -= 1;
                         }
-                        app.delete_from_history(command)?;
+                        app.delete_from_history(command);
+                        write_file(format!(".{}_history", shell), &app.raw_history)?;
                     }
                     app.reload_commands();
                     nc::clear();
