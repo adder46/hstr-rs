@@ -68,3 +68,39 @@ pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
     }
     contents.to_vec()
 }
+
+pub fn print_config_bash() {
+    let bash_config = vec![
+        "# append new history items to .bash_history",
+        "shopt -s histappend",
+        "# don't put duplicate lines or lines starting with space in the history",
+        "HISTCONTROL=ignoreboth",
+        "# increase history file size",
+        "HISTFILESIZE=1000000",
+        "# increase history size",
+        "HISTSIZE=${HISTFILESIZE}",
+        "# sync entries in memory with .bash_history",
+        "export PROMPT_COMMAND=\"history -a; history -n; ${PROMPT_COMMAND}\"",
+        "# bind hstr-rs to CTRL + H",
+        "if [[ $- =~ .*i.* ]]; then bind '\"\\C-h\": \"hstr-rs \\C-j\"'; fi",
+    ];
+    println!("{}", bash_config.join("\n"));
+}
+
+pub fn print_config_zsh() {
+    let zsh_config = vec![
+        "# append new history items to .bash_history",
+        "setopt INC_APPEND_HISTORY",
+        "# don't put duplicate lines",
+        "setopt HIST_IGNORE_ALL_DUPS",
+        "# don't put lines starting with space in the history",
+        "setopt HIST_IGNORE_SPACE",
+        "# increase history file size",
+        "HISTFILESIZE=1000000",
+        "# increase history size",
+        "HISTSIZE=${HISTFILESIZE}",
+        "# bind hstr-rs to CTRL + H",
+        "bindkey -s '^H' 'hstr-rs^M'",
+    ];
+    println!("{}", zsh_config.join("\n"));
+}

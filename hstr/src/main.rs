@@ -1,10 +1,12 @@
 use crate::app::{Application, View};
+use crate::cli::parse_cli_args;
 use crate::ui::UserInterface;
-use crate::util::write_file;
+use crate::util::{print_config_bash, print_config_zsh, write_file};
 use ncurses as nc;
 use setenv::get_shell;
 
 mod app;
+mod cli;
 mod sort;
 mod ui;
 mod util;
@@ -19,6 +21,24 @@ const CTRL_SLASH: u32 = 31;
 const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
+    match parse_cli_args() {
+        Some(arg) => match arg.as_str() {
+            "bash" => {
+                print_config_bash();
+                return Ok(());
+            }
+            "zsh" => {
+                print_config_zsh();
+                return Ok(());
+            }
+            "N/A" => {
+                println!("N/A");
+                return Ok(());
+            }
+            _ => unreachable!(),
+        },
+        None => {}
+    }
     nc::setlocale(nc::LcCategory::all, "");
     nc::initscr();
     nc::noecho();

@@ -22,19 +22,49 @@ Then run:
 cargo install --git https://github.com/adder46/hstr-rs.git
 ```
 ​
-If on bash, add this to .bashrc:
+If on bash, run:
 
-```bash
+```
+hstr-rs --show-config bash >> ~/.bashrc
+```
+
+...or manually add the lines below to your `.bashrc`:
+
+```sh
 # append new history items to .bash_history
-shopt -s histappend 
+shopt -s histappend
 # don't put duplicate lines or lines starting with space in the history
 HISTCONTROL=ignoreboth
 # increase history file size
 HISTFILESIZE=1000000
 # increase history size
 HISTSIZE=${HISTFILESIZE}
-# append new entries from memory to .bash_history
+# sync entries in memory with .bash_history, and vice-versa
 export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
+# bind hstr-rs to CTRL + H
+if [[ $- =~ .*i.* ]]; then bind '"\C-h": "hstr-rs \C-j"'; fi
+```
+
+For zsh, run:
+
+```
+hstr-rs --show-config zsh >> ~/.zshrc
+```
+...or manually add the lines below to your `.zshrc`:
+
+```sh
+# append new history items to .bash_history
+setopt INC_APPEND_HISTORY
+# don't put duplicate lines
+setopt HIST_IGNORE_ALL_DUPS
+# don't put lines starting with space in the history
+setopt HIST_IGNORE_SPACE
+# increase history file size
+HISTFILESIZE=1000000
+# increase history size
+HISTSIZE=${HISTFILESIZE}
+# bind hstr-rs to CTRL + H
+bindkey -s '^H' 'hstr-rs^M'
 ```
 
 ## Usage
