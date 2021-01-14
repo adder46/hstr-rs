@@ -2,6 +2,8 @@
 
 ![build status](https://github.com/adder46/hstr-rs/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/adder46/hstr-rs/branch/master/graph/badge.svg?token=0BZM100XU5)](https://codecov.io/gh/adder46/hstr-rs)
 
+![screenshot](hstr-rs.gif)
+
 **hstr-rs** is a shell history suggest box. Like hstr, but with pages. As opposed to original hstr which was the inspiration for this project, hstr-rs has pages and provides Unicode support out of the box on both bash and zsh.
 
 There is an ongoing effort to support other shells too. Contributors are very welcome.
@@ -76,10 +78,6 @@ alias hh=hstr-rs
 ```
 
 Then invoke the program with `hh`.
-
-## Screencast
-
-![screenshot](hstr-rs.gif)
 
 ## Licensing
 
