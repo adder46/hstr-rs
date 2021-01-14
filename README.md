@@ -52,7 +52,7 @@ hstr-rs --show-config zsh >> ~/.zshrc
 ```
 ...or manually add the lines below to your `.zshrc`:
 
-```sh
+```zsh
 # append new history items to .bash_history
 setopt INC_APPEND_HISTORY
 # don't put duplicate lines
