@@ -21,8 +21,8 @@ const CTRL_SLASH: u32 = 31;
 const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
-    match parse_cli_args() {
-        Some(arg) => match arg.as_str() {
+    if let Some(arg) = parse_cli_args() {
+        match arg.as_str() {
             "bash" => {
                 print_config_bash();
                 return Ok(());
@@ -31,13 +31,8 @@ fn main() -> Result<(), std::io::Error> {
                 print_config_zsh();
                 return Ok(());
             }
-            "N/A" => {
-                println!("N/A");
-                return Ok(());
-            }
-            _ => unreachable!(),
-        },
-        None => {}
+            _ => return Ok(()),
+        }
     }
     nc::setlocale(nc::LcCategory::all, "");
     nc::initscr();
