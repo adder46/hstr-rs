@@ -23,7 +23,6 @@ pub struct Application {
     pub search_string: String,
     pub shell: String,
     pub raw_history: Vec<String>,
-    pub dirty_history: bool,
     buf: String,
 }
 
@@ -38,7 +37,6 @@ impl Application {
             search_string: String::new(),
             shell: shell.to_string(),
             raw_history: Vec::new(),
-            dirty_history: false,
             buf: String::new(),
         }
     }
