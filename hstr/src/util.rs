@@ -66,7 +66,7 @@ pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
             contents[index] ^= 32;
         }
     }
-    contents.to_vec()
+    contents
 }
 
 pub fn print_config_bash() {
