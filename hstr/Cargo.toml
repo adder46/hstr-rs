@@ -3,6 +3,8 @@ name = "hstr-rs"
 version = "0.8.0"
 authors = ["adder46 <dedmauz69@gmail.com>"]
 edition = "2018"
+description = "History suggest box for bash and zsh"
+license = "MIT"
 
 [dependencies]
 ncurses = { version = "5.99.0", features = ["wide"] }
