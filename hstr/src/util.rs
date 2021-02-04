@@ -54,53 +54,52 @@ fn remove_timestamps(contents: String) -> String {
     let r = Regex::new(r"^: \d{10}:\d;").unwrap();
     contents
         .lines()
-        .map(|x| r.replace(x, "").into())
-        .collect::<Vec<String>>()
-        .join("\n")
+        .map(|x| format!("{}\n", r.replace(x, "")))
+        .collect()
 }
 
 pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
-    for index in (0..contents.len()).rev() {
+    (0..contents.len()).rev().for_each(|index| {
         if contents[index] == 0x83 {
             contents.remove(index);
             contents[index] ^= 32;
         }
-    }
+    });
     contents
 }
 
 pub fn print_config_bash() {
-    let bash_config = vec![
-        "# append new history items to .bash_history",
-        "shopt -s histappend",
-        "# don't put duplicate lines or lines starting with space in the history",
-        "HISTCONTROL=ignoreboth",
-        "# increase history file size",
-        "HISTFILESIZE=1000000",
-        "# increase history size",
-        "HISTSIZE=${HISTFILESIZE}",
-        "# sync entries in memory with .bash_history",
-        "export PROMPT_COMMAND=\"history -a; history -n; ${PROMPT_COMMAND}\"",
-        "# bind hstr-rs to CTRL + H",
-        "if [[ $- =~ .*i.* ]]; then bind '\"\\C-h\": \"hstr-rs \\C-j\"'; fi",
-    ];
-    println!("{}", bash_config.join("\n"));
+    println!(
+        "\
+        # append new history items to .bash_history\n\
+        shopt -s histappend\n\
+        # don't put duplicate lines or lines starting with space in the history\n\
+        HISTCONTROL=ignoreboth\n\
+        # increase history file size\n\
+        HISTFILESIZE=1000000\n\
+        # increase history size\n\
+        HISTSIZE=${{HISTFILESIZE}}\n\
+        # sync entries in memory with .bash_history\n\
+        export PROMPT_COMMAND=\"history -a; history -n; ${{PROMPT_COMMAND}}\"\n\
+        # bind hstr-rs to CTRL + H\n\
+        if [[ $- =~ .*i.* ]]; then bind '\"\\C-h\": \"hstr-rs \\C-j\"'; fi"
+    );
 }
 
 pub fn print_config_zsh() {
-    let zsh_config = vec![
-        "# append new history items to .bash_history",
-        "setopt INC_APPEND_HISTORY",
-        "# don't put duplicate lines",
-        "setopt HIST_IGNORE_ALL_DUPS",
-        "# don't put lines starting with space in the history",
-        "setopt HIST_IGNORE_SPACE",
-        "# increase history file size",
-        "HISTFILESIZE=1000000",
-        "# increase history size",
-        "HISTSIZE=${HISTFILESIZE}",
-        "# bind hstr-rs to CTRL + H",
-        "bindkey -s '^H' 'hstr-rs^M'",
-    ];
-    println!("{}", zsh_config.join("\n"));
+    println!(
+        "\
+        # append new history items to .bash_history\n\
+        setopt INC_APPEND_HISTORY\n\
+        # don't put duplicate lines\n\
+        setopt HIST_IGNORE_ALL_DUPS\n\
+        # don't put lines starting with space in the history\n\
+        setopt HIST_IGNORE_SPACE\n\
+        # increase history file size\n\
+        HISTFILESIZE=1000000\n\
+        # increase history size\n\
+        HISTSIZE=${{HISTFILESIZE}}\n\
+        # bind hstr-rs to CTRL + H\n\
+        bindkey -s '^H' 'hstr-rs^M'"
+    );
 }
