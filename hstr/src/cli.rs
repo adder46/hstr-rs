@@ -2,7 +2,7 @@ use clap::{App, Arg};
 
 pub fn parse_args() -> Option<String> {
     let matches = App::new("hstr-rs")
-        .version("0.7.0")
+        .version("0.8.0")
         .author("adder46 <dedmauz69@gmail.com>")
         .about("History suggest box for bash and zsh")
         .arg(
@@ -15,7 +15,7 @@ pub fn parse_args() -> Option<String> {
     match matches.value_of("show-config") {
         Some(a) => match a {
             "bash" | "zsh" => Some(a.to_string()),
-            _ => Some("N/A".to_string()),
+            _ => None,
         },
         None => None,
     }
