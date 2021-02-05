@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 
-pub fn parse_cli_args() -> Option<String> {
+pub fn parse_args() -> Option<String> {
     let matches = App::new("hstr-rs")
         .version("0.7.0")
         .author("adder46 <dedmauz69@gmail.com>")

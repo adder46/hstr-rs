@@ -1,7 +1,5 @@
 use crate::app::{Application, View};
-use crate::cli::parse_cli_args;
 use crate::ui::UserInterface;
-use crate::util::{print_config_bash, print_config_zsh, write_file};
 use ncurses as nc;
 use setenv::get_shell;
 
@@ -21,139 +19,132 @@ const CTRL_SLASH: u32 = 31;
 const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
-    if let Some(arg) = parse_cli_args() {
+    if let Some(arg) = cli::parse_args() {
         match arg.as_str() {
-            "bash" => {
-                print_config_bash();
-                return Ok(());
+            "bash" | "zsh" => {
+                util::print_config(arg);
             }
-            "zsh" => {
-                print_config_zsh();
-                return Ok(());
-            }
-            _ => return Ok(()),
+            _ => {},
         }
+        return Ok(());
     }
     nc::setlocale(nc::LcCategory::all, "");
     nc::initscr();
     nc::noecho();
     nc::keypad(nc::stdscr(), true);
     let shell = get_shell().get_name();
-    let mut app = Application::new(shell);
-    app.load_commands()?;
+    let mut application = Application::new(shell);
+    application.load_commands()?;
     let mut user_interface = UserInterface::new();
     user_interface.init_color_pairs();
-    user_interface.populate_screen(&app);
+    user_interface.populate_screen(&application);
     loop {
         let user_input = nc::get_wch();
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_E => {
-                    app.toggle_regex_mode();
+                    application.toggle_regex_mode();
                     user_interface.selected = 0;
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 CTRL_F => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     let command = user_interface.get_selected(&commands);
-                    if app.view == View::Favorites {
-                        let page_size = user_interface.get_page_size(&commands) - 1;
-                        if user_interface.selected == page_size {
-                            user_interface.selected -= 1;
-                        }
+                    if application.view == View::Favorites {
+                        user_interface.retain_selection(&commands);
                     }
-                    app.add_or_rm_fav(command);
-                    write_file(
+                    application.add_or_rm_fav(command);
+                    util::write_file(
                         format!(".config/hstr-rs/.{}_favorites", shell),
-                        app.commands
+                        application
+                            .commands
                             .as_ref()
                             .unwrap()
-                            .get(&app::View::Favorites)
+                            .get(&View::Favorites)
                             .unwrap(),
                     )?;
                     nc::clear();
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 TAB => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     let command = user_interface.get_selected(&commands);
                     util::echo(command);
                     break;
                 }
                 ENTER => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     let command = user_interface.get_selected(&commands);
                     util::echo(format!("{}\n", command));
                     break;
                 }
                 CTRL_T => {
-                    app.toggle_case();
-                    user_interface.populate_screen(&app);
+                    application.toggle_case();
+                    user_interface.populate_screen(&application);
                 }
                 ESC => break,
                 CTRL_SLASH => {
-                    app.toggle_view();
+                    application.toggle_view();
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 _ => {
-                    app.search_string.push(std::char::from_u32(ch).unwrap());
+                    application
+                        .search_string
+                        .push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
-                    app.search();
-                    user_interface.populate_screen(&app);
+                    application.search();
+                    user_interface.populate_screen(&application);
                 }
             },
             nc::WchResult::KeyCode(code) => match code {
                 nc::KEY_UP => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     user_interface.move_selected(commands, -1);
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_DOWN => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     user_interface.move_selected(commands, 1);
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_BACKSPACE => {
-                    app.search_string.pop();
-                    app.restore();
+                    application.search_string.pop();
+                    application.restore();
                     nc::clear();
-                    app.search();
-                    user_interface.populate_screen(&app);
+                    application.search();
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_DC => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     let command = user_interface.get_selected(&commands);
                     user_interface.prompt_for_deletion(&command);
                     if nc::getch() == Y {
-                        let page_size = user_interface.get_page_size(&commands) - 1;
-                        if user_interface.selected == page_size {
-                            user_interface.selected -= 1;
-                        }
-                        app.delete_from_history(command);
-                        write_file(format!(".{}_history", shell), &app.raw_history)?;
+                        user_interface.retain_selection(&commands);
+                        application.delete_from_history(command);
+                        util::write_file(format!(".{}_history", shell), &application.raw_history)?;
                     }
-                    app.reload_commands();
+                    application.reload_commands();
                     nc::clear();
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_NPAGE => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     user_interface.turn_page(commands, 1);
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_PPAGE => {
-                    let commands = app.get_commands();
+                    let commands = application.get_commands();
                     user_interface.turn_page(commands, -1);
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 nc::KEY_RESIZE => {
                     nc::clear();
-                    user_interface.populate_screen(&app);
+                    user_interface.populate_screen(&application);
                 }
                 _ => {}
             },

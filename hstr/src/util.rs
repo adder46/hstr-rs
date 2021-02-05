@@ -68,7 +68,15 @@ pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
     contents
 }
 
-pub fn print_config_bash() {
+pub fn print_config(sh: String) {
+    match sh.as_str() {
+        "bash" => print_config_bash(),
+        "zsh" => print_config_zsh(),
+        _ => {}
+    }
+}
+
+fn print_config_bash() {
     println!(
         "\
         # append new history items to .bash_history\n\
@@ -86,7 +94,7 @@ pub fn print_config_bash() {
     );
 }
 
-pub fn print_config_zsh() {
+fn print_config_zsh() {
     println!(
         "\
         # append new history items to .bash_history\n\

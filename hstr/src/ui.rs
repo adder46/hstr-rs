@@ -166,6 +166,13 @@ impl UserInterface {
         )
     }
 
+    pub fn retain_selection(&mut self, commands: &[String]) {
+        let page_size = self.get_page_size(commands) - 1;
+        if self.selected == page_size {
+            self.selected -= 1;
+        }
+    }
+
     fn total_pages(&self, commands: &[String]) -> i32 {
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
