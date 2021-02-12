@@ -110,31 +110,31 @@ impl UserInterface {
     pub fn turn_page(&mut self, commands: &[String], direction: i32) {
         /* Turning the page essentially works as follows:
          *
-         *  We are getting the potential page by subtracting 1
-         *  from the page number, because pages are 1-based, and
-         *  we need them to be 0-based for the calculation to work.
-         *  Then we apply the direction which is always +1 or -1.
+         * We are getting the potential page by subtracting 1
+         * from the page number, because pages are 1-based, and
+         * we need them to be 0-based for the calculation to work.
+         * Then we apply the direction which is always +1 or -1.
          *
-         *  We then use the remainder part of Euclidean division of
-         *  potential page over total number of pages, in order to
-         *  wrap the page number around the total number of pages.
+         * We then use the remainder part of Euclidean division of
+         * potential page over total number of pages, in order to
+         * wrap the page number around the total number of pages.
          *
-         *  This means that if we are on page 4, and there are 4 pages in total,
-         *  the command to go to the next page would result in rem(4, 4),
-         *  which is 0, and by adjusting the page number to be 1-based,
-         *  we get back to page 1, as desired.
+         * This means that if we are on page 4, and there are 4 pages in total,
+         * the command to go to the next page would result in rem(4, 4),
+         * which is 0, and by adjusting the page number to be 1-based,
+         * we get back to page 1, as desired.
          *
-         *  This also works in the opposite direction:
+         * This also works in the opposite direction:
          *
-         *  If there are 4 total pages, and we are on page 1, and we issue
-         *  the command to go to the previous page, we are doing: rem(-1, 4),
-         *  which is 3. By adjusting the page number to be 1-based,
-         *  we get to the 4th page.
+         * If there are 4 total pages, and we are on page 1, and we issue
+         * the command to go to the previous page, we are doing: rem(-1, 4),
+         * which is 3. By adjusting the page number to be 1-based,
+         * we get to the 4th page.
          *
-         *  The total number of pages being 0, which is the case when there
-         *  are no commands in the history, means that we are dividing by 0,
-         *  which is undefined, and rem() returns None, which means that we are
-         *  on page 1.
+         * The total number of pages being 0, which is the case when there
+         * are no commands in the history, means that we are dividing by 0,
+         * which is undefined, and rem() returns None, which means that we are
+         * on page 1.
          */
         nc::clear();
         let potential_page = self.page - 1 + direction;
