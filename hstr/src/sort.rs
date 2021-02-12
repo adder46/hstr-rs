@@ -19,7 +19,7 @@ where
     T: Clone + Eq + Hash,
 {
     let mut map = HashMap::new();
-    commands.into_iter().for_each(|cmd| {
+    commands.iter().for_each(|cmd| {
         *map.entry(cmd.to_owned()).or_insert(0) += 1;
     });
     map
@@ -30,7 +30,7 @@ where
     T: Clone + Eq + Hash,
 {
     let mut map = HashMap::new();
-    commands.into_iter().enumerate().for_each(|(pos, cmd)| {
+    commands.iter().enumerate().for_each(|(pos, cmd)| {
         map.insert(cmd.to_owned(), pos);
     });
     map
