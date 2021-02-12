@@ -24,7 +24,7 @@ fn main() -> Result<(), std::io::Error> {
             "bash" | "zsh" => {
                 util::print_config(arg);
             }
-            _ => {},
+            _ => {}
         }
         return Ok(());
     }

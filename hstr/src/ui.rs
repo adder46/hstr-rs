@@ -207,16 +207,18 @@ impl UserInterface {
     }
 
     fn display_case(&self, value: bool) -> String {
-        match value {
-            true => String::from("sensitive"),
-            false => String::from("insensitive"),
+        if value {
+            String::from("sensitive")
+        } else {
+            String::from("insensitive")
         }
     }
 
     fn display_regex_mode(&self, value: bool) -> String {
-        match value {
-            true => String::from("on"),
-            false => String::from("off"),
+        if value {
+            String::from("on")
+        } else {
+            String::from("off")
         }
     }
 
