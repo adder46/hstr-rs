@@ -41,13 +41,14 @@ pub fn get_shell_prompt() -> String {
 }
 
 pub fn zsh_process_history() -> String {
-    let unmetafied_history = zsh_unmetafy_history(zsh_read_history().unwrap());
-    zsh_remove_timestamps(String::from_utf8(unmetafied_history).unwrap())
+    let history = zsh_read_history().unwrap();
+    let unmetafied = zsh_unmetafy_history(history);
+    zsh_remove_timestamps(String::from_utf8(unmetafied).unwrap())
 }
 
 fn zsh_unmetafy_history(mut bytestring: Vec<u8>) -> Vec<u8> {
     /* Unmetafying zsh history requires looping over the bytestring, removing
-     * each Meta character we encounter, and XOR-ing the following byte with 32.
+     * each encountered Meta character, and XOR-ing the following byte with 32.
      *
      * For instance:
      *
@@ -73,12 +74,10 @@ fn zsh_read_history() -> Result<Vec<u8>, io::Error> {
 }
 
 fn zsh_remove_timestamps(history: String) -> String {
-    /* Sometimes we need to strip the metadata preceding history entries.
+    /* The preceding metadata needs to be stripped
+     * because zsh history entries look like below:
      *
-     * For instance:
-     *
-     * Input:  `: 1330648651:0;sudo reboot`
-     * Wanted: `sudo reboot`
+     * `: 1330648651:0;sudo reboot`
      */
     let r = Regex::new(r"^: \d{10}:\d;").unwrap();
     history.lines().map(|x| r.replace(x, "") + "\n").collect()
