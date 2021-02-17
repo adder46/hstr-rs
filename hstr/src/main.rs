@@ -20,21 +20,13 @@ const Y: i32 = 121;
 
 fn main() -> Result<(), std::io::Error> {
     if let Some(arg) = cli::parse_args() {
-        match arg.as_str() {
-            "bash" | "zsh" => {
-                util::print_config(arg);
-            }
-            _ => {}
-        }
+        util::print_config(arg);
         return Ok(());
     }
-    nc::setlocale(nc::LcCategory::all, "");
-    nc::initscr();
-    nc::noecho();
-    nc::keypad(nc::stdscr(), true);
+    ui::ncurses_init();
     let shell = get_shell().get_name();
     let mut application = Application::new(shell);
-    application.load_commands()?;
+    application.load_history();
     let mut user_interface = UserInterface::new();
     user_interface.init_color_pairs();
     user_interface.populate_screen(&application);
@@ -55,7 +47,7 @@ fn main() -> Result<(), std::io::Error> {
                     }
                     application.add_or_rm_fav(command);
                     util::write_file(
-                        format!(".config/hstr-rs/.{}_favorites", shell),
+                        &format!(".config/hstr-rs/.{}_favorites", shell),
                         application
                             .commands
                             .as_ref()
@@ -126,9 +118,9 @@ fn main() -> Result<(), std::io::Error> {
                     if nc::getch() == Y {
                         user_interface.retain_selection(&commands);
                         application.delete_from_history(command);
-                        util::write_file(format!(".{}_history", shell), &application.raw_history)?;
+                        util::write_file(&format!(".{}_history", shell), &application.raw_history)?;
                     }
-                    application.reload_commands();
+                    application.reload_history();
                     nc::clear();
                     user_interface.populate_screen(&application);
                 }
@@ -150,9 +142,6 @@ fn main() -> Result<(), std::io::Error> {
             },
         }
     }
-    nc::clear();
-    nc::refresh();
-    nc::doupdate();
-    nc::endwin();
+    ui::ncurses_teardown();
     Ok(())
 }

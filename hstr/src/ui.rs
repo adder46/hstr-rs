@@ -11,6 +11,20 @@ use regex::Regex;
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
+pub fn ncurses_init() {
+    nc::setlocale(nc::LcCategory::all, "");
+    nc::initscr();
+    nc::noecho();
+    nc::keypad(nc::stdscr(), true);
+}
+
+pub fn ncurses_teardown() {
+    nc::clear();
+    nc::refresh();
+    nc::doupdate();
+    nc::endwin();
+}
+
 pub struct UserInterface {
     pub page: i32,
     pub selected: i32,

@@ -5,20 +5,20 @@ use std::fs::{create_dir_all, write, File};
 use std::io::{self, BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 
-pub fn read_file(path: String) -> Result<Vec<String>, std::io::Error> {
+pub fn read_file(path: &str) -> Result<Vec<String>, std::io::Error> {
     let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
-    if !Path::new(p.as_path()).exists() {
-        create_dir_all(p.parent().unwrap())?;
-        File::create(p.as_path())?;
-        Ok(Vec::new())
-    } else {
+    if Path::new(p.as_path()).exists() {
         let file = File::open(p).unwrap();
         let reader = BufReader::new(file);
         reader.lines().collect::<Result<Vec<_>, _>>()
+    } else {
+        create_dir_all(p.parent().unwrap())?;
+        File::create(p.as_path())?;
+        Ok(Vec::new())
     }
 }
 
-pub fn write_file(path: String, thing: &[String]) -> Result<(), std::io::Error> {
+pub fn write_file(path: &str, thing: &[String]) -> Result<(), std::io::Error> {
     let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
     write(p, thing.join("\n"))?;
     Ok(())
@@ -40,32 +40,48 @@ pub fn get_shell_prompt() -> String {
     )
 }
 
-pub fn read_zsh_history() -> Result<String, io::Error> {
-    let mut file = File::open(dirs::home_dir().unwrap().join(".zsh_history"))?;
-    let mut contents = Vec::new();
-    file.read_to_end(&mut contents)?;
-    let unmetafied_history = zsh_unmetafy(contents);
-    Ok(remove_timestamps(
-        String::from_utf8(unmetafied_history).unwrap(),
-    ))
+pub fn zsh_process_history() -> String {
+    let unmetafied_history = zsh_unmetafy_history(zsh_read_history().unwrap());
+    zsh_remove_timestamps(String::from_utf8(unmetafied_history).unwrap())
 }
 
-fn remove_timestamps(contents: String) -> String {
-    let r = Regex::new(r"^: \d{10}:\d;").unwrap();
-    contents
-        .lines()
-        .map(|x| format!("{}\n", r.replace(x, "")))
-        .collect()
-}
-
-pub fn zsh_unmetafy(mut contents: Vec<u8>) -> Vec<u8> {
-    (0..contents.len()).rev().for_each(|index| {
-        if contents[index] == 0x83 {
-            contents.remove(index);
-            contents[index] ^= 32;
+fn zsh_unmetafy_history(mut bytestring: Vec<u8>) -> Vec<u8> {
+    /* Unmetafying zsh history requires looping over the bytestring, removing
+     * each Meta character we encounter, and XOR-ing the following byte with 32.
+     *
+     * For instance:
+     *
+     * Input: ('a', 'b', 'c', Meta, 'd', 'e', 'f')
+     * Wanted: ('a', 'b', 'c', 'd' ^ 32, 'e', 'f')
+     */
+    const ZSH_META: u8 = 0x83;
+    (0..bytestring.len()).rev().for_each(|index| {
+        if bytestring[index] == ZSH_META {
+            bytestring.remove(index);
+            bytestring[index] ^= 32;
         }
     });
-    contents
+    bytestring
+}
+
+fn zsh_read_history() -> Result<Vec<u8>, io::Error> {
+    let path = dirs::home_dir().unwrap().join(".zsh_history");
+    let mut file = File::open(path)?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
+fn zsh_remove_timestamps(history: String) -> String {
+    /* Sometimes we need to strip the metadata preceding history entries.
+     *
+     * For instance:
+     *
+     * Input:  `: 1330648651:0;sudo reboot`
+     * Wanted: `sudo reboot`
+     */
+    let r = Regex::new(r"^: \d{10}:\d;").unwrap();
+    history.lines().map(|x| r.replace(x, "") + "\n").collect()
 }
 
 pub fn print_config(sh: String) {

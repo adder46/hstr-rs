@@ -1,4 +1,4 @@
-use ncurses::{attr_t, NCURSES_ATTR_T};
+use ncurses::{attr_t, NCURSES_ATTR_T, WINDOW};
 
 #[allow(non_snake_case)]
 pub const fn A_BOLD() -> attr_t {
@@ -54,5 +54,42 @@ pub fn init_pair(_pair: i16, _f: i16, _b: i16) -> i32 {
     0
 }
 
+pub fn setlocale(_lc: LcCategory, _locale: &str) -> String {
+    String::new()
+}
+
+pub fn initscr() -> WINDOW {
+    std::ptr::null_mut::<i8>()
+}
+
+pub fn noecho() -> i32 {
+    0
+}
+
+pub fn keypad(_w: WINDOW, _bf: bool) -> i32 {
+    0
+}
+
+pub fn stdscr() -> WINDOW {
+    std::ptr::null_mut::<i8>()
+}
+
 #[allow(non_camel_case_types)]
 pub type chtype = u64;
+
+pub fn refresh() -> i32 {
+    0
+}
+
+pub fn doupdate() -> i32 {
+    0
+}
+
+pub fn endwin() -> i32 {
+    0
+}
+
+#[allow(non_camel_case_types)]
+pub enum LcCategory {
+    all,
+}
