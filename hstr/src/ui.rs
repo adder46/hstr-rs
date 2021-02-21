@@ -9,7 +9,6 @@ use ncurses as nc;
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
-
 pub struct UserInterface {
     pub page: Page,
     pub selected: i32,
