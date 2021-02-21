@@ -23,12 +23,12 @@ fn main() -> Result<(), std::io::Error> {
         util::print_config(arg);
         return Ok(());
     }
-    ui::ncurses_init();
+    ui::curses::init();
     let shell = get_shell().get_name();
     let mut application = Application::new(shell);
     application.load_history();
     let mut user_interface = UserInterface::new();
-    user_interface.init_color_pairs();
+    ui::curses::init_color_pairs();
     user_interface.populate_screen(&application);
     loop {
         let user_input = nc::get_wch();
@@ -41,9 +41,10 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 CTRL_F => {
                     let commands = application.get_commands();
-                    let command = user_interface.get_selected(&commands);
+                    let selected = user_interface.selected;
+                    let command = user_interface.page.selected(&commands, selected);
                     if application.view == View::Favorites {
-                        user_interface.retain_selection(&commands);
+                        user_interface.retain_selected(&commands);
                     }
                     application.add_or_rm_fav(command);
                     util::write_file(
@@ -60,13 +61,15 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 TAB => {
                     let commands = application.get_commands();
-                    let command = user_interface.get_selected(&commands);
+                    let selected = user_interface.selected;
+                    let command = user_interface.page.selected(&commands, selected);
                     util::echo(command);
                     break;
                 }
                 ENTER => {
                     let commands = application.get_commands();
-                    let command = user_interface.get_selected(&commands);
+                    let selected = user_interface.selected;
+                    let command = user_interface.page.selected(&commands, selected);
                     util::echo(format!("{}\n", command));
                     break;
                 }
@@ -78,7 +81,7 @@ fn main() -> Result<(), std::io::Error> {
                 CTRL_SLASH => {
                     application.toggle_view();
                     user_interface.selected = 0;
-                    user_interface.page = 1;
+                    user_interface.page.value = 1;
                     nc::clear();
                     user_interface.populate_screen(&application);
                 }
@@ -87,7 +90,7 @@ fn main() -> Result<(), std::io::Error> {
                         .search_string
                         .push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
-                    user_interface.page = 1;
+                    user_interface.page.value = 1;
                     nc::clear();
                     application.search();
                     user_interface.populate_screen(&application);
@@ -113,10 +116,11 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 nc::KEY_DC => {
                     let commands = application.get_commands();
-                    let command = user_interface.get_selected(&commands);
-                    user_interface.prompt_for_deletion(&command);
+                    let selected = user_interface.selected;
+                    let command = user_interface.page.selected(&commands, selected);
+                    user_interface.ask_before_deletion(&command);
                     if nc::getch() == Y {
-                        user_interface.retain_selection(&commands);
+                        user_interface.retain_selected(&commands);
                         application.delete_from_history(command);
                         util::write_file(&format!(".{}_history", shell), &application.raw_history)?;
                     }
@@ -142,6 +146,6 @@ fn main() -> Result<(), std::io::Error> {
             },
         }
     }
-    ui::ncurses_teardown();
+    ui::curses::teardown();
     Ok(())
 }

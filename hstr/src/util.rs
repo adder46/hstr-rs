@@ -25,8 +25,8 @@ pub fn write_file(path: &str, thing: &[String]) -> Result<(), std::io::Error> {
 }
 
 pub fn echo(command: String) {
-    unsafe {
-        for byte in command.as_bytes() {
+    for byte in command.as_bytes() {
+        unsafe {
             ioctl(0, TIOCSTI, byte);
         }
     }
@@ -81,6 +81,13 @@ fn zsh_remove_timestamps(history: String) -> String {
      */
     let r = Regex::new(r"^: \d{10}:\d;").unwrap();
     history.lines().map(|x| r.replace(x, "") + "\n").collect()
+}
+
+pub fn substring_indices<'a>(string: &'a str, substring: &'a str) -> Vec<usize> {
+    match Regex::new(substring) {
+        Ok(r) => r.find_iter(string).flat_map(|m| m.range()).collect(),
+        Err(_) => vec![],
+    }
 }
 
 pub fn print_config(sh: String) {

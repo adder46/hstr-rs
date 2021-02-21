@@ -131,6 +131,15 @@ impl Application {
         }
     }
 
+    pub fn cmd_in_fav(&self, cmd: &str) -> bool {
+        self.commands
+            .as_ref()
+            .unwrap()
+            .get(&View::Favorites)
+            .unwrap()
+            .contains(&cmd.to_string())
+    }
+
     pub fn delete_from_history(&mut self, command: String) {
         View::iter().for_each(|view| {
             self.commands
