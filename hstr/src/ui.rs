@@ -1,5 +1,6 @@
 use crate::app::Application;
 use crate::util::substring_indices;
+use formatter::*;
 
 #[cfg(test)]
 use fake_ncurses as nc;
@@ -27,7 +28,7 @@ impl UserInterface {
         let page_contents = self.page.contents(commands);
         page_contents.iter().enumerate().for_each(|(row_idx, cmd)| {
             /* Print everything first regularly */
-            nc::mvaddstr(row_idx as i32 + 3, 1, &formatter::ljust(cmd));
+            nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
             /* Paint matched chars, if any */
             let matches = substring_indices(cmd, &app.search_string);
             if !matches.is_empty() {
@@ -55,14 +56,14 @@ impl UserInterface {
 
     fn paint_favorite(&self, entry: String, index: usize) {
         nc::attron(nc::COLOR_PAIR(4));
-        nc::mvaddstr(index as i32 + 3, 1, &formatter::ljust(&entry));
+        nc::mvaddstr(index as i32 + 3, 1, &ljust(&entry));
         nc::attroff(nc::COLOR_PAIR(4));
     }
 
     fn paint_selected(&self, entry: &str, index: usize) {
         if index == self.selected as usize {
             nc::attron(nc::COLOR_PAIR(2));
-            nc::mvaddstr(index as i32 + 3, 1, &formatter::ljust(&entry));
+            nc::mvaddstr(index as i32 + 3, 1, &ljust(&entry));
             nc::attroff(nc::COLOR_PAIR(2));
         }
     }
@@ -70,9 +71,9 @@ impl UserInterface {
     fn paint_bars(&self, app: &Application, user_interface: &UserInterface) {
         nc::mvaddstr(1, 1, LABEL);
         nc::attron(nc::COLOR_PAIR(3));
-        nc::mvaddstr(2, 1, &formatter::ljust(&formatter::status_bar(&app, user_interface)));
+        nc::mvaddstr(2, 1, &ljust(&status_bar(&app, user_interface)));
         nc::attroff(nc::COLOR_PAIR(3));
-        nc::mvaddstr(0, 1, &formatter::top_bar(&app.search_string));
+        nc::mvaddstr(0, 1, &top_bar(&app.search_string));
     }
 
     pub fn turn_page(&mut self, commands: &[String], direction: i32) {
@@ -141,7 +142,7 @@ impl UserInterface {
     pub fn ask_before_deletion(&self, command: &str) {
         nc::mvaddstr(1, 0, &format!("{1:0$}", nc::COLS() as usize, ""));
         nc::attron(nc::COLOR_PAIR(6));
-        nc::mvaddstr(1, 1, &formatter::deletion_prompt(command));
+        nc::mvaddstr(1, 1, &deletion_prompt(command));
         nc::attroff(nc::COLOR_PAIR(6));
     }
 }
