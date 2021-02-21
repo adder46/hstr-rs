@@ -118,16 +118,23 @@ impl UserInterface {
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
 
-    pub fn move_selected(&mut self, commands: &[String], direction: i32) {
+    pub fn move_selected(&mut self, commands: &[String], direction: Direction) {
         let page_size = self.page.size(commands);
-        self.selected += direction;
+        self.selected += direction as i32;
         if let Some(wraparound) = i32::checked_rem_euclid(self.selected, page_size) {
             self.selected = wraparound;
-            if direction == 1 && self.selected == 0 {
-                self.turn_page(commands, 1);
-            } else if direction == -1 && self.selected == (page_size - 1) {
-                self.turn_page(commands, -1);
-                self.selected = self.page.size(commands) - 1;
+            match direction {
+                Direction::Forward => {
+                    if self.selected == 0 {
+                        self.turn_page(commands, 1);
+                    }
+                },
+                Direction::Backward => {
+                    if self.selected == (page_size - 1) {
+                        self.turn_page(commands, -1);
+                        self.selected = self.page.size(commands) - 1;    
+                    }
+                }
             }
         }
     }
@@ -262,6 +269,12 @@ mod formatter {
     pub fn ljust(string: &str) -> String {
         format!("{0:1$}", string, nc::COLS() as usize - 1)
     }
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum Direction {
+    Forward = 1,
+    Backward = -1,
 }
 
 #[cfg(test)]

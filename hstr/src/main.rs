@@ -1,5 +1,5 @@
 use crate::app::{Application, View};
-use crate::ui::UserInterface;
+use crate::ui::{Direction, UserInterface};
 use ncurses as nc;
 use setenv::get_shell;
 
@@ -27,8 +27,8 @@ fn main() -> Result<(), std::io::Error> {
     let shell = get_shell().get_name();
     let mut application = Application::new(shell);
     application.load_history();
-    let mut user_interface = UserInterface::new();
     ui::curses::init_color_pairs();
+    let mut user_interface = UserInterface::new();
     user_interface.populate_screen(&application);
     loop {
         let user_input = nc::get_wch();
@@ -99,12 +99,12 @@ fn main() -> Result<(), std::io::Error> {
             nc::WchResult::KeyCode(code) => match code {
                 nc::KEY_UP => {
                     let commands = application.get_commands();
-                    user_interface.move_selected(commands, -1);
+                    user_interface.move_selected(commands, Direction::Backward);
                     user_interface.populate_screen(&application);
                 }
                 nc::KEY_DOWN => {
                     let commands = application.get_commands();
-                    user_interface.move_selected(commands, 1);
+                    user_interface.move_selected(commands, Direction::Forward);
                     user_interface.populate_screen(&application);
                 }
                 nc::KEY_BACKSPACE => {
