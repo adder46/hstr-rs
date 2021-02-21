@@ -6,6 +6,10 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
+const LABEL: &str =
+    "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
+
+
 pub struct UserInterface {
     pub page: Page,
     pub selected: i32,
@@ -37,7 +41,7 @@ impl UserInterface {
             /* Finally, paint selection */
             self.paint_selected(cmd, row_idx);
         });
-        bars::paint_bars(&app, &self);
+        self.paint_bars(&app, &self);
     }
 
     fn paint_matched_chars(&self, command: &str, indices: Vec<usize>, row_idx: usize) {
@@ -62,6 +66,14 @@ impl UserInterface {
             nc::mvaddstr(index as i32 + 3, 1, &formatter::ljust(&entry));
             nc::attroff(nc::COLOR_PAIR(2));
         }
+    }
+
+    fn paint_bars(&self, app: &Application, user_interface: &UserInterface) {
+        nc::mvaddstr(1, 1, LABEL);
+        nc::attron(nc::COLOR_PAIR(3));
+        nc::mvaddstr(2, 1, &formatter::ljust(&formatter::status_bar(&app, user_interface)));
+        nc::attroff(nc::COLOR_PAIR(3));
+        nc::mvaddstr(0, 1, &formatter::top_bar(&app.search_string));
     }
 
     pub fn turn_page(&mut self, commands: &[String], direction: i32) {
@@ -192,22 +204,31 @@ pub mod curses {
 }
 
 mod formatter {
-    use crate::app::View;
+    use crate::app::{Application, View};
+    use crate::ui::UserInterface;
+    use crate::util::get_shell_prompt;
     use ncurses as nc;
+
+    pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
+        format!(
+            "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
+            view(app.view),
+            regex_mode(app.regex_mode),
+            case(app.case_sensitivity),
+            pages(&app, &user_interface),
+            user_interface.total_pages(app.get_commands())
+        )
+    }
+
+    pub fn top_bar(search_string: &str) -> String {
+        format!("{} {}", get_shell_prompt(), search_string)
+    }
 
     pub fn view(value: View) -> String {
         match value {
             View::Sorted => String::from("sorted"),
             View::Favorites => String::from("favorites"),
             View::All => String::from("all"),
-        }
-    }
-
-    pub fn case(value: bool) -> String {
-        if value {
-            String::from("sensitive")
-        } else {
-            String::from("insensitive")
         }
     }
 
@@ -219,48 +240,27 @@ mod formatter {
         }
     }
 
+    pub fn case(value: bool) -> String {
+        if value {
+            String::from("sensitive")
+        } else {
+            String::from("insensitive")
+        }
+    }
+
+    fn pages(app: &Application, user_interface: &UserInterface) -> i32 {
+        match user_interface.total_pages(app.get_commands()) {
+            0 => 0,
+            _ => user_interface.page.value,
+        }
+    }
+
     pub fn deletion_prompt(command: &str) -> String {
         format!("Do you want to delete all occurences of {}? y/n", command)
     }
 
     pub fn ljust(string: &str) -> String {
         format!("{0:1$}", string, nc::COLS() as usize - 1)
-    }
-}
-
-pub mod bars {
-    use crate::app::Application;
-    use crate::ui::{formatter, UserInterface};
-    use crate::util::get_shell_prompt;
-    use ncurses as nc;
-
-    const LABEL: &str =
-        "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
-
-    pub fn paint_bars(app: &Application, user_interface: &UserInterface) {
-        nc::mvaddstr(1, 1, LABEL);
-        nc::attron(nc::COLOR_PAIR(3));
-        nc::mvaddstr(2, 1, &formatter::ljust(&status_bar(&app, user_interface)));
-        nc::attroff(nc::COLOR_PAIR(3));
-        nc::mvaddstr(0, 1, &top_bar(&app.search_string));
-    }
-
-    fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
-        format!(
-            "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
-            formatter::view(app.view),
-            formatter::regex_mode(app.regex_mode),
-            formatter::case(app.case_sensitivity),
-            match user_interface.total_pages(app.get_commands()) {
-                0 => 0,
-                _ => user_interface.page.value,
-            },
-            user_interface.total_pages(app.get_commands())
-        )
-    }
-
-    fn top_bar(search_string: &str) -> String {
-        format!("{} {}", get_shell_prompt(), search_string)
     }
 }
 
