@@ -130,12 +130,12 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 nc::KEY_NPAGE => {
                     let commands = application.get_commands();
-                    user_interface.turn_page(commands, 1);
+                    user_interface.turn_page(commands, Direction::Forward);
                     user_interface.populate_screen(&application);
                 }
                 nc::KEY_PPAGE => {
                     let commands = application.get_commands();
-                    user_interface.turn_page(commands, -1);
+                    user_interface.turn_page(commands, Direction::Backward);
                     user_interface.populate_screen(&application);
                 }
                 nc::KEY_RESIZE => {

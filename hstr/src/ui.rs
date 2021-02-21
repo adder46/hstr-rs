@@ -76,7 +76,7 @@ impl UserInterface {
         nc::mvaddstr(0, 1, &top_bar(&app.search_string));
     }
 
-    pub fn turn_page(&mut self, commands: &[String], direction: i32) {
+    pub fn turn_page(&mut self, commands: &[String], direction: Direction) {
         /* Turning the page essentially works as follows:
          *
          * We are getting the potential page by subtracting 1
@@ -106,7 +106,7 @@ impl UserInterface {
          * on page 1.
          */
         nc::clear();
-        let next = self.page.value - 1 + direction;
+        let next = self.page.value - 1 + direction as i32;
         let pages = self.total_pages(commands);
         self.page.value = match i32::checked_rem_euclid(next, pages) {
             Some(x) => x + 1,
@@ -126,13 +126,13 @@ impl UserInterface {
             match direction {
                 Direction::Forward => {
                     if self.selected == 0 {
-                        self.turn_page(commands, 1);
+                        self.turn_page(commands, Direction::Forward);
                     }
-                },
+                }
                 Direction::Backward => {
                     if self.selected == (page_size - 1) {
-                        self.turn_page(commands, -1);
-                        self.selected = self.page.size(commands) - 1;    
+                        self.turn_page(commands, Direction::Backward);
+                        self.selected = self.page.size(commands) - 1;
                     }
                 }
             }
@@ -330,16 +330,21 @@ mod tests {
         current,
         expected,
         direction,
-        case(1, 2, 1),
-        case(2, 3, 1),
-        case(3, 4, 1),
-        case(4, 1, 1),
-        case(4, 3, -1),
-        case(3, 2, -1),
-        case(2, 1, -1),
-        case(1, 4, -1),
+        case(1, 2, Direction::Forward),
+        case(2, 3, Direction::Forward),
+        case(3, 4, Direction::Forward),
+        case(4, 1, Direction::Forward),
+        case(4, 3, Direction::Backward),
+        case(3, 2, Direction::Backward),
+        case(2, 1, Direction::Backward),
+        case(1, 4, Direction::Backward)
     )]
-    fn turn_page(current: i32, expected: i32, direction: i32, app_with_fake_history: Application) {
+    fn turn_page(
+        current: i32,
+        expected: i32,
+        direction: Direction,
+        app_with_fake_history: Application,
+    ) {
         let mut user_interface = UserInterface::new();
         let commands = app_with_fake_history.get_commands();
         user_interface.page.value = current;
