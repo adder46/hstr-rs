@@ -95,7 +95,8 @@ impl UserInterface {
          */
         nc::clear();
         let next = self.page.value - 1 + direction;
-        self.page.value = match i32::checked_rem_euclid(next, self.total_pages(commands)) {
+        let pages = self.total_pages(commands);
+        self.page.value = match i32::checked_rem_euclid(next, pages) {
             Some(x) => x + 1,
             None => 1,
         }
@@ -244,7 +245,7 @@ pub mod bars {
         nc::mvaddstr(0, 1, &top_bar(&app.search_string));
     }
 
-    pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
+    fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
         format!(
             "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
             formatter::view(app.view),
@@ -258,7 +259,7 @@ pub mod bars {
         )
     }
 
-    pub fn top_bar(search_string: &str) -> String {
+    fn top_bar(search_string: &str) -> String {
         format!("{} {}", get_shell_prompt(), search_string)
     }
 }
