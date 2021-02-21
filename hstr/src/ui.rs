@@ -233,8 +233,8 @@ pub mod bars {
     use crate::util::get_shell_prompt;
     use ncurses as nc;
 
-    const LABEL: &str = "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
-
+    const LABEL: &str =
+        "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
     pub fn paint_bars(app: &Application, user_interface: &UserInterface) {
         nc::mvaddstr(1, 1, LABEL);
