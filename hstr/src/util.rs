@@ -95,7 +95,7 @@ pub fn print_config(sh: String) {
         "bash" => print_config_bash(),
         "zsh" => print_config_zsh(),
         "N/A" => println!("Available options: bash, zsh"),
-        _ => {},
+        _ => {}
     }
 }
 
