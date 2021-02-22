@@ -3,23 +3,23 @@ use regex::Regex;
 use std::env;
 use std::fs::{create_dir_all, write, File};
 use std::io::{self, BufRead, BufReader, Read};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-pub fn read_file(path: &str) -> Result<Vec<String>, std::io::Error> {
-    let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
-    if Path::new(p.as_path()).exists() {
+pub fn read_file(path: impl AsRef<Path>) -> Result<Vec<String>, std::io::Error> {
+    let p = dirs::home_dir().unwrap().join(path);
+    if p.exists() {
         let file = File::open(p).unwrap();
         let reader = BufReader::new(file);
         reader.lines().collect::<Result<Vec<_>, _>>()
     } else {
         create_dir_all(p.parent().unwrap())?;
-        File::create(p.as_path())?;
+        File::create(p)?;
         Ok(Vec::new())
     }
 }
 
-pub fn write_file(path: &str, thing: &[String]) -> Result<(), std::io::Error> {
-    let p = dirs::home_dir().unwrap().join(PathBuf::from(path));
+pub fn write_file(path: impl AsRef<Path>, thing: &[String]) -> Result<(), std::io::Error> {
+    let p = dirs::home_dir().unwrap().join(path);
     write(p, thing.join("\n"))?;
     Ok(())
 }
@@ -56,12 +56,12 @@ fn zsh_unmetafy_history(mut bytestring: Vec<u8>) -> Vec<u8> {
      * Wanted: ('a', 'b', 'c', 'd' ^ 32, 'e', 'f')
      */
     const ZSH_META: u8 = 0x83;
-    (0..bytestring.len()).rev().for_each(|index| {
+    for index in (0..bytestring.len()).rev() {
         if bytestring[index] == ZSH_META {
             bytestring.remove(index);
             bytestring[index] ^= 32;
         }
-    });
+    }
     bytestring
 }
 
@@ -94,42 +94,17 @@ pub fn print_config(sh: String) {
     match sh.as_str() {
         "bash" => print_config_bash(),
         "zsh" => print_config_zsh(),
-        _ => {}
+        "N/A" => println!("Available options: bash, zsh"),
+        _ => {},
     }
 }
 
 fn print_config_bash() {
-    println!(
-        "\
-        # append new history items to .bash_history\n\
-        shopt -s histappend\n\
-        # don't put duplicate lines or lines starting with space in the history\n\
-        HISTCONTROL=ignoreboth\n\
-        # increase history file size\n\
-        HISTFILESIZE=1000000\n\
-        # increase history size\n\
-        HISTSIZE=${{HISTFILESIZE}}\n\
-        # sync entries in memory with .bash_history\n\
-        export PROMPT_COMMAND=\"history -a; history -n; ${{PROMPT_COMMAND}}\"\n\
-        # bind hstr-rs to CTRL + H\n\
-        if [[ $- =~ .*i.* ]]; then bind '\"\\C-h\": \"hstr-rs \\C-j\"'; fi"
-    );
+    let bash_config = include_str!("config/config_bash");
+    println!("{}", bash_config);
 }
 
 fn print_config_zsh() {
-    println!(
-        "\
-        # append new history items to .bash_history\n\
-        setopt INC_APPEND_HISTORY\n\
-        # don't put duplicate lines\n\
-        setopt HIST_IGNORE_ALL_DUPS\n\
-        # don't put lines starting with space in the history\n\
-        setopt HIST_IGNORE_SPACE\n\
-        # increase history file size\n\
-        HISTFILESIZE=1000000\n\
-        # increase history size\n\
-        HISTSIZE=${{HISTFILESIZE}}\n\
-        # bind hstr-rs to CTRL + H\n\
-        bindkey -s '^H' 'hstr-rs^M'"
-    );
+    let zsh_config = include_str!("config/config_zsh");
+    println!("{}", zsh_config);
 }

@@ -1,0 +1,12 @@
+# append new history items to .bash_history
+shopt -s histappend
+# don't put duplicate lines or lines starting with space in the history
+HISTCONTROL=ignoreboth
+# increase history file size
+HISTFILESIZE=1000000
+# increase history size
+HISTSIZE=${HISTFILESIZE}
+# sync entries in memory with .bash_history, and vice-versa
+export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
+# bind hstr-rs to CTRL + H
+if [[ $- =~ .*i.* ]]; then bind '"\C-h": "hstr-rs \C-j"'; fi
