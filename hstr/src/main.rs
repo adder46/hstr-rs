@@ -16,7 +16,7 @@ const ENTER: u32 = 10;
 const CTRL_T: u32 = 20;
 const ESC: u32 = 27;
 const CTRL_SLASH: u32 = 31;
-const Y: i32 = b'Y' as i32;
+const Y: i32 = b'y' as i32;
 
 fn main() -> Result<(), std::io::Error> {
     if let Some(arg) = cli::parse_args() {
