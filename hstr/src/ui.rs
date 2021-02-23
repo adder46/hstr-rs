@@ -36,108 +36,108 @@ impl UserInterface {
         }
     }
 
-    pub fn handle_input(
-        &mut self,
-        user_input: Option<nc::WchResult>,
-    ) -> Result<(), std::io::Error> {
-        match user_input.unwrap() {
-            nc::WchResult::Char(ch) => match ch {
-                CTRL_E => {
-                    self.app.toggle_regex_mode();
-                    self.selected = 0;
-                    self.populate_screen();
-                }
-                CTRL_F => {
-                    let command = self.selected();
-                    if self.app.view == View::Favorites {
-                        self.retain_selected();
+    pub fn handle_input(&mut self) -> Result<(), std::io::Error> {
+        loop {
+            let user_input = nc::get_wch();
+            match user_input.unwrap() {
+                nc::WchResult::Char(ch) => match ch {
+                    CTRL_E => {
+                        self.app.toggle_regex_mode();
+                        self.selected = 0;
+                        self.populate_screen();
                     }
-                    self.app.add_or_rm_fav(command);
-                    util::write_file(
-                        &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
-                        self.app.commands(View::Favorites),
-                    )?;
-                    nc::clear();
-                    self.populate_screen();
-                }
-                TAB => {
-                    let command = self.selected();
-                    util::echo(command);
-                    return Ok(());
-                }
-                ENTER => {
-                    let command = self.selected();
-                    util::echo(command + "\n");
-                    return Ok(());
-                }
-                CTRL_T => {
-                    self.app.toggle_case();
-                    self.populate_screen();
-                }
-                ESC => return Ok(()),
-                CTRL_SLASH => {
-                    self.app.toggle_view();
-                    self.selected = 0;
-                    self.page = 1;
-                    nc::clear();
-                    self.populate_screen();
-                }
-                _ => {
-                    self.app
-                        .search_string
-                        .push(std::char::from_u32(ch).unwrap());
-                    self.selected = 0;
-                    self.page = 1;
-                    nc::clear();
-                    self.app.search();
-                    self.populate_screen();
-                }
-            },
-            nc::WchResult::KeyCode(code) => match code {
-                nc::KEY_UP => {
-                    self.move_selected(Direction::Backward);
-                    self.populate_screen();
-                }
-                nc::KEY_DOWN => {
-                    self.move_selected(Direction::Forward);
-                    self.populate_screen();
-                }
-                nc::KEY_BACKSPACE => {
-                    self.app.search_string.pop();
-                    self.app.restore();
-                    nc::clear();
-                    self.app.search();
-                    self.populate_screen();
-                }
-                nc::KEY_DC => {
-                    let command = self.selected();
-                    self.ask_before_deletion(&command);
-                    if nc::getch() == Y {
-                        self.retain_selected();
-                        self.app.delete_from_history(command);
+                    CTRL_F => {
+                        let command = self.selected();
+                        if self.app.view == View::Favorites {
+                            self.retain_selected();
+                        }
+                        self.app.add_or_rm_fav(command);
                         util::write_file(
-                            &format!(".{}_history", self.app.shell),
-                            &self.app.raw_history,
+                            &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
+                            self.app.commands(View::Favorites),
                         )?;
+                        nc::clear();
+                        self.populate_screen();
                     }
-                    self.app.reload_history();
-                    nc::clear();
-                    self.populate_screen();
-                }
-                nc::KEY_NPAGE => {
-                    self.turn_page(Direction::Forward);
-                    self.populate_screen();
-                }
-                nc::KEY_PPAGE => {
-                    self.turn_page(Direction::Backward);
-                    self.populate_screen();
-                }
-                nc::KEY_RESIZE => {
-                    nc::clear();
-                    self.populate_screen();
-                }
-                _ => {}
-            },
+                    TAB => {
+                        let command = self.selected();
+                        util::echo(command);
+                        break;
+                    }
+                    ENTER => {
+                        let command = self.selected();
+                        util::echo(command + "\n");
+                        break;
+                    }
+                    CTRL_T => {
+                        self.app.toggle_case();
+                        self.populate_screen();
+                    }
+                    ESC => break,
+                    CTRL_SLASH => {
+                        self.app.toggle_view();
+                        self.selected = 0;
+                        self.page = 1;
+                        nc::clear();
+                        self.populate_screen();
+                    }
+                    _ => {
+                        self.app
+                            .search_string
+                            .push(std::char::from_u32(ch).unwrap());
+                        self.selected = 0;
+                        self.page = 1;
+                        nc::clear();
+                        self.app.search();
+                        self.populate_screen();
+                    }
+                },
+                nc::WchResult::KeyCode(code) => match code {
+                    nc::KEY_UP => {
+                        self.move_selected(Direction::Backward);
+                        self.populate_screen();
+                    }
+                    nc::KEY_DOWN => {
+                        self.move_selected(Direction::Forward);
+                        self.populate_screen();
+                    }
+                    nc::KEY_BACKSPACE => {
+                        self.app.search_string.pop();
+                        self.app.restore();
+                        nc::clear();
+                        self.app.search();
+                        self.populate_screen();
+                    }
+                    nc::KEY_DC => {
+                        let command = self.selected();
+                        self.ask_before_deletion(&command);
+                        if nc::getch() == Y {
+                            self.retain_selected();
+                            self.app.delete_from_history(command);
+                            util::write_file(
+                                &format!(".{}_history", self.app.shell),
+                                &self.app.raw_history,
+                            )?;
+                        }
+                        self.app.reload_history();
+                        nc::clear();
+                        self.populate_screen();
+                    }
+                    nc::KEY_NPAGE => {
+                        self.turn_page(Direction::Forward);
+                        self.populate_screen();
+                    }
+                    nc::KEY_PPAGE => {
+                        self.turn_page(Direction::Backward);
+                        self.populate_screen();
+                    }
+                    nc::KEY_RESIZE => {
+                        nc::clear();
+                        self.populate_screen();
+                    }
+                    _ => {}
+                },
+            }
         }
         Ok(())
     }
