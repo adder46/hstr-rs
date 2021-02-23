@@ -1,7 +1,7 @@
-#[cfg(not(test))]
-use ncurses as nc;
 #[cfg(test)]
 use fake_ncurses as nc;
+#[cfg(not(test))]
+use ncurses as nc;
 
 mod app;
 mod cli;

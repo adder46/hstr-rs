@@ -2,10 +2,10 @@ use crate::app::{Application, View};
 use crate::util::{self, substring_indices};
 use formatter::*;
 
-#[cfg(not(test))]
-use ncurses as nc;
 #[cfg(test)]
 use fake_ncurses as nc;
+#[cfg(not(test))]
+use ncurses as nc;
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
@@ -36,7 +36,10 @@ impl UserInterface {
         }
     }
 
-    pub fn handle_input(&mut self, user_input: Option<nc::WchResult>) -> Result<(), std::io::Error> {
+    pub fn handle_input(
+        &mut self,
+        user_input: Option<nc::WchResult>,
+    ) -> Result<(), std::io::Error> {
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_E => {
@@ -80,8 +83,7 @@ impl UserInterface {
                     self.populate_screen();
                 }
                 _ => {
-                    self
-                        .app
+                    self.app
                         .search_string
                         .push(std::char::from_u32(ch).unwrap());
                     self.selected = 0;
