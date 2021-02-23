@@ -15,7 +15,7 @@ pub fn parse_args() -> Option<String> {
     match matches.value_of("show-config") {
         Some(a) => match a {
             "bash" | "zsh" => Some(a.to_string()),
-            _ => None,
+            _ => Some("N/A".to_string()),
         },
         None => None,
     }

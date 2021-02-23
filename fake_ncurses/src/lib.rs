@@ -89,7 +89,28 @@ pub fn endwin() -> i32 {
     0
 }
 
+pub fn getch() -> i32 {
+    0
+}
+
+pub fn get_wch() -> Option<WchResult> {
+    Some(WchResult::Char(0))
+}
+
 #[allow(non_camel_case_types)]
 pub enum LcCategory {
     all,
 }
+
+pub enum WchResult {
+    Char(u32),
+    KeyCode(i32),
+}
+
+pub const KEY_DOWN: i32 = 0x102;
+pub const KEY_UP: i32 = 0x103;
+pub const KEY_BACKSPACE: i32 = 0x107;
+pub const KEY_DC: i32 = 0x14a;
+pub const KEY_NPAGE: i32 = 0x152;
+pub const KEY_PPAGE: i32 = 0x153;
+pub const KEY_RESIZE: i32 = 0x19a;

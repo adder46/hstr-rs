@@ -1,84 +1,74 @@
 use crate::sort::sort;
-use crate::util::{read_file, zsh_process_history};
+use crate::util::{self, read_file};
 use itertools::Itertools;
-use maplit::hashmap;
 use regex::{escape, Regex, RegexBuilder};
-use std::collections::HashMap;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
+#[derive(Clone)]
+pub struct History {
+    sorted: Vec<String>,
+    favorites: Vec<String>,
+    all: Vec<String>,
+}
+
+#[derive(Clone)]
 pub struct Application {
     pub case_sensitivity: bool,
-    pub commands: Option<HashMap<View, Vec<String>>>,
+    pub commands: History,
     pub raw_history: Vec<String>,
     pub regex_mode: bool,
     pub search_string: String,
     pub shell: String,
-    pub to_restore: Option<HashMap<View, Vec<String>>>,
+    pub to_restore: History,
     pub view: View,
 }
 
 impl Application {
     pub fn new(shell: &str) -> Self {
+        let (raw_history, commands) = match shell {
+            "bash" => {
+                let history = read_file(".bash_history").unwrap();
+                let commands = History {
+                    sorted: sort(history.clone()),
+                    favorites: read_file(".config/hstr-rs/.bash_favorites").unwrap(),
+                    all: history.clone().into_iter().unique().collect(),
+                };
+                (history, commands)
+            }
+            "zsh" => {
+                let history = util::zsh_history::process()
+                    .split('\n')
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>();
+                let commands = History {
+                    sorted: sort(history.clone()),
+                    favorites: read_file(".config/hstr-rs/.zsh_favorites").unwrap(),
+                    all: history.clone().into_iter().unique().collect(),
+                };
+                (history, commands)
+            }
+            _ => unreachable!(),
+        };
         Self {
             case_sensitivity: false,
-            commands: None,
-            raw_history: Vec::new(),
+            commands: commands.clone(),
+            raw_history,
             regex_mode: false,
             search_string: String::new(),
             shell: shell.to_string(),
-            to_restore: None,
+            to_restore: commands,
             view: View::Sorted,
         }
     }
 
-    pub fn load_history(&mut self) {
-        match self.shell.as_str() {
-            "bash" => self.load_bash_history(),
-            "zsh" => self.load_zsh_history(),
-            _ => {}
-        }
-    }
-
-    fn load_bash_history(&mut self) {
-        let history = read_file(".bash_history").unwrap();
-        let commands = hashmap! {
-            View::Sorted => sort(history.clone()),
-            View::Favorites => read_file(".config/hstr-rs/.bash_favorites").unwrap(),
-            View::All => history.clone().into_iter().unique().collect(),
-        };
-        self.raw_history = history;
-        self.to_restore = Some(commands.clone());
-        self.commands = Some(commands);
-    }
-
-    fn load_zsh_history(&mut self) {
-        let history = zsh_process_history()
-            .split('\n')
-            .map(|x| x.to_string())
-            .collect::<Vec<String>>();
-        let commands = hashmap! {
-            View::Sorted => sort(history.clone()),
-            View::Favorites => read_file(".config/hstr-rs/.zsh_favorites").unwrap(),
-            View::All => history.clone().into_iter().unique().collect(),
-        };
-        self.raw_history = history;
-        self.to_restore = Some(commands.clone());
-        self.commands = Some(commands);
-    }
-
     pub fn reload_history(&mut self) {
-        let commands = hashmap! {
-            View::Sorted => sort(self.raw_history.clone()),
-            View::Favorites => read_file(
-                &format!(
-                    ".config/hstr-rs/.{}_favorites",
-                    self.shell
-                )
-            ).unwrap(),
-            View::All => self.raw_history.clone().into_iter().unique().collect(),
+        let commands = History {
+            sorted: sort(self.raw_history.clone()),
+            favorites: read_file(&format!(".config/hstr-rs/.{}_favorites", self.shell)).unwrap(),
+            all: self.raw_history.clone().into_iter().unique().collect(),
         };
-        self.to_restore = Some(commands);
+        self.to_restore = commands;
         self.restore();
     }
 
@@ -86,8 +76,20 @@ impl Application {
         self.commands = self.to_restore.clone();
     }
 
-    pub fn get_commands(&self) -> &[String] {
-        self.commands.as_ref().unwrap().get(&self.view).unwrap()
+    pub fn commands(&self, view: View) -> &[String] {
+        match view {
+            View::Sorted => &self.commands.sorted,
+            View::Favorites => &self.commands.favorites,
+            View::All => &self.commands.all,
+        }
+    }
+
+    pub fn commands_mut(&mut self, view: View) -> &mut Vec<String> {
+        match view {
+            View::Sorted => &mut self.commands.sorted,
+            View::Favorites => &mut self.commands.favorites,
+            View::All => &mut self.commands.all,
+        }
     }
 
     pub fn search(&mut self) {
@@ -97,11 +99,7 @@ impl Application {
                 return;
             }
         };
-        self.commands
-            .as_mut()
-            .unwrap()
-            .get_mut(&self.view)
-            .unwrap()
+        self.commands_mut(self.view)
             .retain(|x| search_regex.is_match(x));
     }
 
@@ -118,12 +116,7 @@ impl Application {
     }
 
     pub fn add_or_rm_fav(&mut self, command: String) {
-        let favorites = self
-            .commands
-            .as_mut()
-            .unwrap()
-            .get_mut(&View::Favorites)
-            .unwrap();
+        let favorites = self.commands_mut(View::Favorites);
         if !favorites.contains(&command) {
             favorites.push(command);
         } else {
@@ -131,14 +124,13 @@ impl Application {
         }
     }
 
+    pub fn cmd_in_fav(&self, cmd: &str) -> bool {
+        self.commands.favorites.contains(&cmd.to_string())
+    }
+
     pub fn delete_from_history(&mut self, command: String) {
         View::iter().for_each(|view| {
-            self.commands
-                .as_mut()
-                .unwrap()
-                .get_mut(&view)
-                .unwrap()
-                .retain(|x| *x != command);
+            self.commands_mut(view).retain(|x| *x != command);
         });
         self.raw_history.retain(|x| *x != command);
     }
@@ -206,14 +198,14 @@ pub mod fixtures {
     }
 
     #[fixture]
-    pub fn app_with_fake_history(fake_history: Vec<String>) -> Application {
+    pub fn fake_app(fake_history: Vec<String>) -> Application {
         let mut app = Application::new("bash");
-        let fake_commands = hashmap! {
-            View::All => fake_history.clone(),
-            View::Favorites => Vec::new(),
-            View::Sorted => fake_history,
+        let fake_commands = History {
+            all: fake_history.clone(),
+            favorites: Vec::new(),
+            sorted: fake_history,
         };
-        app.commands = Some(fake_commands);
+        app.commands = fake_commands;
         app
     }
 }
@@ -238,14 +230,14 @@ mod tests {
         expected: Vec<&str>,
         regex_mode: bool,
         case_sensitivity: bool,
-        mut app_with_fake_history: Application,
+        mut fake_app: Application,
     ) {
-        app_with_fake_history.regex_mode = regex_mode;
-        app_with_fake_history.case_sensitivity = case_sensitivity;
-        app_with_fake_history.search_string = String::from(search_string);
-        app_with_fake_history.create_search_regex();
-        app_with_fake_history.search();
-        assert_eq!(app_with_fake_history.get_commands(), expected);
+        fake_app.regex_mode = regex_mode;
+        fake_app.case_sensitivity = case_sensitivity;
+        fake_app.search_string = String::from(search_string);
+        fake_app.create_search_regex();
+        fake_app.search();
+        assert_eq!(fake_app.commands(fake_app.view), expected);
     }
 
     #[rstest(
@@ -255,9 +247,9 @@ mod tests {
         case(View::Favorites, Vec::new()),
         case(View::All, fake_history())
     )]
-    fn get_commands(view: View, expected: Vec<String>, mut app_with_fake_history: Application) {
-        app_with_fake_history.view = view;
-        let commands = app_with_fake_history.get_commands();
+    fn get_commands(view: View, expected: Vec<String>, mut fake_app: Application) {
+        fake_app.view = view;
+        let commands = fake_app.commands(fake_app.view);
         assert_eq!(commands, expected);
     }
 
@@ -276,12 +268,12 @@ mod tests {
         regex_mode: bool,
         case_sensitivity: bool,
         expected: &str,
-        mut app_with_fake_history: Application,
+        mut fake_app: Application,
     ) {
-        app_with_fake_history.search_string = search_string;
-        app_with_fake_history.regex_mode = regex_mode;
-        app_with_fake_history.case_sensitivity = case_sensitivity;
-        let regex = app_with_fake_history.create_search_regex();
+        fake_app.search_string = search_string;
+        fake_app.regex_mode = regex_mode;
+        fake_app.case_sensitivity = case_sensitivity;
+        let regex = fake_app.create_search_regex();
         assert_eq!(regex.unwrap_or(Regex::new("").unwrap()).as_str(), expected);
     }
 
@@ -291,22 +283,11 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn add_or_rm_fav(command: String, mut app_with_fake_history: Application) {
-        app_with_fake_history.add_or_rm_fav(command.clone());
-        assert!(app_with_fake_history
-            .commands
-            .as_ref()
-            .unwrap()
-            .get(&View::Favorites)
-            .unwrap()
-            .contains(&command));
-        app_with_fake_history.add_or_rm_fav(command.clone());
-        assert!(!app_with_fake_history
-            .commands
-            .unwrap()
-            .get(&View::Favorites)
-            .unwrap()
-            .contains(&command));
+    fn add_or_rm_fav(command: String, mut fake_app: Application) {
+        fake_app.add_or_rm_fav(command.clone());
+        assert!(fake_app.commands(View::Favorites).contains(&command));
+        fake_app.add_or_rm_fav(command.clone());
+        assert!(!fake_app.commands(View::Favorites).contains(&command));
     }
 
     #[rstest(
@@ -315,9 +296,9 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn delete_from_history(command: String, mut app_with_fake_history: Application) {
-        app_with_fake_history.delete_from_history(command.clone());
-        assert!(!app_with_fake_history.get_commands().contains(&command));
+    fn delete_from_history(command: String, mut fake_app: Application) {
+        fake_app.delete_from_history(command.clone());
+        assert!(!fake_app.commands(fake_app.view).contains(&command));
     }
 
     #[rstest(
