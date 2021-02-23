@@ -308,6 +308,7 @@ pub mod curses {
         nc::initscr();
         nc::noecho();
         nc::keypad(nc::stdscr(), true);
+        init_color_pairs();
     }
 
     pub fn init_color_pairs() {
