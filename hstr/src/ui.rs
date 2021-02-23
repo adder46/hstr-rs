@@ -1,47 +1,189 @@
-use crate::app::Application;
-use crate::util::substring_indices;
+use crate::app::{Application, View};
+use crate::util::{self, substring_indices};
 use formatter::*;
 
-#[cfg(test)]
-use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
+#[cfg(test)]
+use fake_ncurses as nc;
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
+const CTRL_E: u32 = 5;
+const CTRL_F: u32 = 6;
+const TAB: u32 = 9;
+const ENTER: u32 = 10;
+const CTRL_T: u32 = 20;
+const ESC: u32 = 27;
+const CTRL_SLASH: u32 = 31;
+const Y: i32 = b'y' as i32;
+
 pub struct UserInterface {
-    pub page: Page,
+    pub app: Application,
+    pub page: i32,
     pub selected: i32,
 }
 
 impl UserInterface {
     pub fn new() -> Self {
+        let shell = setenv::get_shell().get_name();
+        let app = Application::new(shell);
         Self {
-            page: Page::new(),
+            app,
+            page: 1,
             selected: 0,
         }
     }
 
-    pub fn populate_screen(&self, app: &Application) {
-        let commands = app.commands(app.view);
-        let page_contents = self.page.contents(commands);
-        page_contents.iter().enumerate().for_each(|(row_idx, cmd)| {
-            /* Print everything first regularly */
-            nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
-            /* Paint matched chars, if any */
-            let matches = substring_indices(cmd, &app.search_string);
-            if !matches.is_empty() {
-                self.paint_matched_chars(cmd, matches, row_idx);
-            }
-            /* Paint favorite, if any */
-            if app.cmd_in_fav(cmd) {
-                self.paint_favorite(cmd.clone(), row_idx);
-            }
-            /* Finally, paint selection */
-            self.paint_selected(cmd, row_idx);
-        });
-        self.paint_bars(&app, &self);
+    pub fn handle_input(&mut self, user_input: Option<nc::WchResult>) -> Result<(), std::io::Error> {
+        match user_input.unwrap() {
+            nc::WchResult::Char(ch) => match ch {
+                CTRL_E => {
+                    self.app.toggle_regex_mode();
+                    self.selected = 0;
+                    self.populate_screen();
+                }
+                CTRL_F => {
+                    let command = self.selected();
+                    if self.app.view == View::Favorites {
+                        self.retain_selected();
+                    }
+                    self.app.add_or_rm_fav(command);
+                    util::write_file(
+                        &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
+                        self.app.commands(View::Favorites),
+                    )?;
+                    nc::clear();
+                    self.populate_screen();
+                }
+                TAB => {
+                    let command = self.selected();
+                    util::echo(command);
+                    return Ok(());
+                }
+                ENTER => {
+                    let command = self.selected();
+                    util::echo(command + "\n");
+                    return Ok(());
+                }
+                CTRL_T => {
+                    self.app.toggle_case();
+                    self.populate_screen();
+                }
+                ESC => return Ok(()),
+                CTRL_SLASH => {
+                    self.app.toggle_view();
+                    self.selected = 0;
+                    self.page = 1;
+                    nc::clear();
+                    self.populate_screen();
+                }
+                _ => {
+                    self
+                        .app
+                        .search_string
+                        .push(std::char::from_u32(ch).unwrap());
+                    self.selected = 0;
+                    self.page = 1;
+                    nc::clear();
+                    self.app.search();
+                    self.populate_screen();
+                }
+            },
+            nc::WchResult::KeyCode(code) => match code {
+                nc::KEY_UP => {
+                    self.move_selected(Direction::Backward);
+                    self.populate_screen();
+                }
+                nc::KEY_DOWN => {
+                    self.move_selected(Direction::Forward);
+                    self.populate_screen();
+                }
+                nc::KEY_BACKSPACE => {
+                    self.app.search_string.pop();
+                    self.app.restore();
+                    nc::clear();
+                    self.app.search();
+                    self.populate_screen();
+                }
+                nc::KEY_DC => {
+                    let command = self.selected();
+                    self.ask_before_deletion(&command);
+                    if nc::getch() == Y {
+                        self.retain_selected();
+                        self.app.delete_from_history(command);
+                        util::write_file(
+                            &format!(".{}_history", self.app.shell),
+                            &self.app.raw_history,
+                        )?;
+                    }
+                    self.app.reload_history();
+                    nc::clear();
+                    self.populate_screen();
+                }
+                nc::KEY_NPAGE => {
+                    self.turn_page(Direction::Forward);
+                    self.populate_screen();
+                }
+                nc::KEY_PPAGE => {
+                    self.turn_page(Direction::Backward);
+                    self.populate_screen();
+                }
+                nc::KEY_RESIZE => {
+                    nc::clear();
+                    self.populate_screen();
+                }
+                _ => {}
+            },
+        }
+        Ok(())
+    }
+
+    fn page_size(&self) -> i32 {
+        self.page_contents().len() as i32
+    }
+
+    pub fn selected(&self) -> String {
+        self.page_contents()
+            .get(self.selected as usize)
+            .unwrap()
+            .to_owned()
+    }
+
+    fn page_contents(&self) -> Vec<String> {
+        let current_view = self.app.view;
+        let commands = self.app.commands(current_view);
+        match commands
+            .chunks(nc::LINES() as usize - 3)
+            .nth(self.page as usize - 1)
+        {
+            Some(cmds) => cmds.to_vec(),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn populate_screen(&self) {
+        self.page_contents()
+            .iter()
+            .enumerate()
+            .for_each(|(row_idx, cmd)| {
+                /* Print everything normally first; then
+                 * Paint matched chars, if any; then
+                 * Paint favorite, if any; then
+                 * Finally, paint selection
+                 */
+                nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
+                let matches = substring_indices(cmd, &self.app.search_string);
+                if !matches.is_empty() {
+                    self.paint_matched_chars(cmd, matches, row_idx);
+                }
+                if self.app.cmd_in_fav(cmd) {
+                    self.paint_favorite(cmd.clone(), row_idx);
+                }
+                self.paint_selected(cmd, row_idx);
+            });
+        self.paint_bars();
     }
 
     fn paint_matched_chars(&self, command: &str, indices: Vec<usize>, row_idx: usize) {
@@ -68,15 +210,15 @@ impl UserInterface {
         }
     }
 
-    fn paint_bars(&self, app: &Application, user_interface: &UserInterface) {
+    fn paint_bars(&self) {
         nc::mvaddstr(1, 1, LABEL);
         nc::attron(nc::COLOR_PAIR(3));
-        nc::mvaddstr(2, 1, &ljust(&status_bar(&app, user_interface)));
+        nc::mvaddstr(2, 1, &ljust(&status_bar(&self.app, self)));
         nc::attroff(nc::COLOR_PAIR(3));
-        nc::mvaddstr(0, 1, &top_bar(&app.search_string));
+        nc::mvaddstr(0, 1, &top_bar(&self.app.search_string));
     }
 
-    pub fn turn_page(&mut self, commands: &[String], direction: Direction) {
+    pub fn turn_page(&mut self, direction: Direction) {
         /* Turning the page essentially works as follows:
          *
          * We are getting the potential page by subtracting 1
@@ -106,41 +248,43 @@ impl UserInterface {
          * on page 1.
          */
         nc::clear();
-        let next = self.page.value - 1 + direction as i32;
-        let pages = self.total_pages(commands);
-        self.page.value = match i32::checked_rem_euclid(next, pages) {
+        let next_page = self.page - 1 + direction as i32;
+        let pages = self.total_pages();
+        self.page = match i32::checked_rem_euclid(next_page, pages) {
             Some(x) => x + 1,
             None => 1,
         }
     }
 
-    fn total_pages(&self, commands: &[String]) -> i32 {
+    pub fn total_pages(&self) -> i32 {
+        let current_view = self.app.view;
+        let commands = self.app.commands(current_view);
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
 
-    pub fn move_selected(&mut self, commands: &[String], direction: Direction) {
-        let page_size = self.page.size(commands);
+    pub fn move_selected(&mut self, direction: Direction) {
+        let page_size = self.page_size();
         self.selected += direction as i32;
         if let Some(wraparound) = i32::checked_rem_euclid(self.selected, page_size) {
             self.selected = wraparound;
             match direction {
                 Direction::Forward => {
                     if self.selected == 0 {
-                        self.turn_page(commands, Direction::Forward);
+                        self.turn_page(Direction::Forward);
                     }
                 }
                 Direction::Backward => {
                     if self.selected == (page_size - 1) {
-                        self.turn_page(commands, Direction::Backward);
-                        self.selected = self.page.size(commands) - 1;
+                        self.turn_page(Direction::Backward);
+                        self.selected = self.page_size() - 1;
                     }
                 }
             }
         }
     }
 
-    pub fn retain_selected(&mut self, commands: &[String]) {
-        let page_size = self.page.size(commands);
+    pub fn retain_selected(&mut self) {
+        let page_size = self.page_size();
         if self.selected == page_size - 1 {
             self.selected -= 1;
         }
@@ -151,37 +295,6 @@ impl UserInterface {
         nc::attron(nc::COLOR_PAIR(6));
         nc::mvaddstr(1, 1, &deletion_prompt(command));
         nc::attroff(nc::COLOR_PAIR(6));
-    }
-}
-
-pub struct Page {
-    pub value: i32,
-}
-
-impl Page {
-    fn new() -> Self {
-        Self { value: 1 }
-    }
-
-    pub fn size(&self, commands: &[String]) -> i32 {
-        self.contents(commands).len() as i32
-    }
-
-    pub fn selected(&self, commands: &[String], index: i32) -> String {
-        self.contents(&commands)
-            .get(index as usize)
-            .unwrap()
-            .to_owned()
-    }
-
-    fn contents(&self, commands: &[String]) -> Vec<String> {
-        match commands
-            .chunks(nc::LINES() as usize - 3)
-            .nth(self.value as usize - 1)
-        {
-            Some(cmds) => cmds.to_vec(),
-            None => Vec::new(),
-        }
     }
 }
 
@@ -220,13 +333,14 @@ mod formatter {
     use ncurses as nc;
 
     pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
+        let total_pages = user_interface.total_pages();
         format!(
             "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
             view(app.view),
             regex_mode(app.regex_mode),
             case(app.case_sensitivity),
-            pages(&app, &user_interface),
-            user_interface.total_pages(app.commands(app.view))
+            current_page(user_interface.page, total_pages),
+            total_pages,
         )
     }
 
@@ -258,10 +372,10 @@ mod formatter {
         }
     }
 
-    fn pages(app: &Application, user_interface: &UserInterface) -> i32 {
-        match user_interface.total_pages(app.commands(app.view)) {
+    fn current_page(current_page: i32, total_pages: i32) -> i32 {
+        match total_pages {
             0 => 0,
-            _ => user_interface.page.value,
+            _ => current_page,
         }
     }
 
@@ -324,9 +438,9 @@ mod tests {
     )]
     fn get_page(page: i32, expected: Vec<&str>, fake_app: Application) {
         let mut user_interface = UserInterface::new();
-        let commands = fake_app.commands(fake_app.view);
-        user_interface.page.value = page;
-        assert_eq!(user_interface.page.contents(commands), expected);
+        user_interface.app = fake_app;
+        user_interface.page = page;
+        assert_eq!(user_interface.page_contents(), expected);
     }
 
     #[rstest(
@@ -344,10 +458,10 @@ mod tests {
     )]
     fn turn_page(current: i32, expected: i32, direction: Direction, fake_app: Application) {
         let mut user_interface = UserInterface::new();
-        let commands = fake_app.commands(fake_app.view);
-        user_interface.page.value = current;
-        user_interface.turn_page(commands, direction);
-        assert_eq!(user_interface.page.value, expected)
+        user_interface.app = fake_app;
+        user_interface.page = current;
+        user_interface.turn_page(direction);
+        assert_eq!(user_interface.page, expected)
     }
 
     #[rstest(
@@ -363,17 +477,17 @@ mod tests {
     }
 
     #[rstest()]
-    fn get_page_size(fake_app: Application) {
-        let user_interface = UserInterface::new();
-        let commands = fake_app.commands(fake_app.view);
-        assert_eq!(user_interface.page.size(commands), 7);
+    fn page_size(fake_app: Application) {
+        let mut user_interface = UserInterface::new();
+        user_interface.app = fake_app;
+        assert_eq!(user_interface.page_size(), 7);
     }
 
     #[rstest()]
     fn total_pages(fake_app: Application) {
-        let user_interface = UserInterface::new();
-        let commands = fake_app.commands(fake_app.view);
-        assert_eq!(user_interface.total_pages(commands), 4);
+        let mut user_interface = UserInterface::new();
+        user_interface.app = fake_app;
+        assert_eq!(user_interface.total_pages(), 4);
     }
 
     #[rstest(
@@ -384,16 +498,16 @@ mod tests {
         case(View::All, "all")
     )]
     fn format_view(value: View, expected: &str) {
-        assert_eq!(super::formatter::view(value), expected.to_string());
+        assert_eq!(super::formatter::view(value), expected);
     }
 
     #[rstest(value, expected, case(true, "sensitive"), case(false, "insensitive"))]
     fn format_case(value: bool, expected: &str) {
-        assert_eq!(super::formatter::case(value), expected.to_string());
+        assert_eq!(super::formatter::case(value), expected);
     }
 
     #[rstest(value, expected, case(true, "on"), case(false, "off"))]
     fn format_regex_mode(value: bool, expected: &str) {
-        assert_eq!(super::formatter::regex_mode(value), expected.to_string());
+        assert_eq!(super::formatter::regex_mode(value), expected);
     }
 }
