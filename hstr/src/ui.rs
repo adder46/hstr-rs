@@ -24,7 +24,7 @@ impl UserInterface {
     }
 
     pub fn populate_screen(&self, app: &Application) {
-        let commands = app.get_commands();
+        let commands = app.commands(app.view);
         let page_contents = self.page.contents(commands);
         page_contents.iter().enumerate().for_each(|(row_idx, cmd)| {
             /* Print everything first regularly */
@@ -168,7 +168,10 @@ impl Page {
     }
 
     pub fn selected(&self, commands: &[String], index: i32) -> String {
-        String::from(self.contents(&commands).get(index as usize).unwrap())
+        self.contents(&commands)
+            .get(index as usize)
+            .unwrap()
+            .to_owned()
     }
 
     fn contents(&self, commands: &[String]) -> Vec<String> {
@@ -223,7 +226,7 @@ mod formatter {
             regex_mode(app.regex_mode),
             case(app.case_sensitivity),
             pages(&app, &user_interface),
-            user_interface.total_pages(app.get_commands())
+            user_interface.total_pages(app.commands(app.view))
         )
     }
 
@@ -231,32 +234,32 @@ mod formatter {
         format!("{} {}", get_shell_prompt(), search_string)
     }
 
-    pub fn view(value: View) -> String {
+    pub fn view(value: View) -> &'static str {
         match value {
-            View::Sorted => String::from("sorted"),
-            View::Favorites => String::from("favorites"),
-            View::All => String::from("all"),
+            View::Sorted => "sorted",
+            View::Favorites => "favorites",
+            View::All => "all",
         }
     }
 
-    pub fn regex_mode(value: bool) -> String {
+    pub fn regex_mode(value: bool) -> &'static str {
         if value {
-            String::from("on")
+            "on"
         } else {
-            String::from("off")
+            "off"
         }
     }
 
-    pub fn case(value: bool) -> String {
+    pub fn case(value: bool) -> &'static str {
         if value {
-            String::from("sensitive")
+            "sensitive"
         } else {
-            String::from("insensitive")
+            "insensitive"
         }
     }
 
     fn pages(app: &Application, user_interface: &UserInterface) -> i32 {
-        match user_interface.total_pages(app.get_commands()) {
+        match user_interface.total_pages(app.commands(app.view)) {
             0 => 0,
             _ => user_interface.page.value,
         }
@@ -319,9 +322,9 @@ mod tests {
         ]),
         case(5, vec![])
     )]
-    fn get_page(page: i32, expected: Vec<&str>, app_with_fake_history: Application) {
+    fn get_page(page: i32, expected: Vec<&str>, fake_app: Application) {
         let mut user_interface = UserInterface::new();
-        let commands = app_with_fake_history.get_commands();
+        let commands = fake_app.commands(fake_app.view);
         user_interface.page.value = page;
         assert_eq!(user_interface.page.contents(commands), expected);
     }
@@ -339,14 +342,9 @@ mod tests {
         case(2, 1, Direction::Backward),
         case(1, 4, Direction::Backward)
     )]
-    fn turn_page(
-        current: i32,
-        expected: i32,
-        direction: Direction,
-        app_with_fake_history: Application,
-    ) {
+    fn turn_page(current: i32, expected: i32, direction: Direction, fake_app: Application) {
         let mut user_interface = UserInterface::new();
-        let commands = app_with_fake_history.get_commands();
+        let commands = fake_app.commands(fake_app.view);
         user_interface.page.value = current;
         user_interface.turn_page(commands, direction);
         assert_eq!(user_interface.page.value, expected)
@@ -365,16 +363,16 @@ mod tests {
     }
 
     #[rstest()]
-    fn get_page_size(app_with_fake_history: Application) {
+    fn get_page_size(fake_app: Application) {
         let user_interface = UserInterface::new();
-        let commands = app_with_fake_history.get_commands();
+        let commands = fake_app.commands(fake_app.view);
         assert_eq!(user_interface.page.size(commands), 7);
     }
 
     #[rstest()]
-    fn total_pages(app_with_fake_history: Application) {
+    fn total_pages(fake_app: Application) {
         let user_interface = UserInterface::new();
-        let commands = app_with_fake_history.get_commands();
+        let commands = fake_app.commands(fake_app.view);
         assert_eq!(user_interface.total_pages(commands), 4);
     }
 

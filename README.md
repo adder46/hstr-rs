@@ -10,12 +10,12 @@ There is an ongoing effort to support other shells too. Contributors are very we
 ​
 ## Installation
 ​
-Make sure you have ncurses and readline packages installed.
+Make sure you have ncurses packages installed.
 
 If on Ubuntu:
 ​
 ```
-sudo apt install libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev libreadline5 libreadline-dev
+sudo apt install libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev
 ```
 ​
 Then run:
