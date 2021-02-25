@@ -1,5 +1,7 @@
 mod app;
 mod cli;
+mod hstr;
+mod io;
 mod sort;
 mod ui;
 mod util;
@@ -13,7 +15,7 @@ fn main() -> Result<(), std::io::Error> {
     ui::curses::init();
     let mut user_interface = ui::UserInterface::new();
     user_interface.populate_screen();
-    user_interface.handle_input()?;
+    user_interface.mainloop()?;
     ui::curses::teardown();
     Ok(())
 }

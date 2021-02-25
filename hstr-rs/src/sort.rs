@@ -1,6 +1,8 @@
-use std::cmp::{Eq, Reverse};
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::{
+    cmp::{Eq, Reverse},
+    collections::HashMap,
+    hash::Hash,
+};
 
 pub fn sort<T>(mut commands: Vec<T>) -> Vec<T>
 where

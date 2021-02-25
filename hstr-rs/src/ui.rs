@@ -1,6 +1,10 @@
-use crate::app::{Application, View};
-use crate::util::{self, substring_indices};
-use formatter::*;
+use crate::{
+    app::{Application, View},
+    io::{echo, write_to_home},
+    util::substring_indices,
+};
+use pp::*;
+use std::io::Error;
 
 #[cfg(test)]
 use fake_ncurses as nc;
@@ -36,7 +40,7 @@ impl UserInterface {
         }
     }
 
-    pub fn handle_input(&mut self) -> Result<(), std::io::Error> {
+    pub fn mainloop(&mut self) -> Result<(), Error> {
         loop {
             let user_input = nc::get_wch();
             match user_input.unwrap() {
@@ -52,7 +56,7 @@ impl UserInterface {
                             self.retain_selected();
                         }
                         self.app.add_or_rm_fav(command);
-                        util::write_file(
+                        write_to_home(
                             &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
                             self.app.commands(View::Favorites),
                         )?;
@@ -61,12 +65,12 @@ impl UserInterface {
                     }
                     TAB => {
                         let command = self.selected();
-                        util::echo(command);
+                        echo(command);
                         break;
                     }
                     ENTER => {
                         let command = self.selected();
-                        util::echo(command + "\n");
+                        echo(command + "\n");
                         break;
                     }
                     CTRL_T => {
@@ -103,7 +107,7 @@ impl UserInterface {
                     }
                     nc::KEY_BACKSPACE => {
                         self.app.search_string.pop();
-                        self.app.restore();
+                        self.app.commands = self.app.to_restore.clone();
                         nc::clear();
                         self.app.search();
                         self.populate_screen();
@@ -114,7 +118,7 @@ impl UserInterface {
                         if nc::getch() == Y {
                             self.retain_selected();
                             self.app.delete_from_history(command);
-                            util::write_file(
+                            write_to_home(
                                 &format!(".{}_history", self.app.shell),
                                 &self.app.raw_history,
                             )?;
@@ -329,11 +333,12 @@ pub mod curses {
     }
 }
 
-mod formatter {
+mod pp {
+    /* Pretty printer */
     use crate::app::{Application, View};
     use crate::ui::UserInterface;
-    use crate::util::get_shell_prompt;
     use ncurses as nc;
+    use std::env;
 
     pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
         let total_pages = user_interface.total_pages();
@@ -349,6 +354,14 @@ mod formatter {
 
     pub fn top_bar(search_string: &str) -> String {
         format!("{} {}", get_shell_prompt(), search_string)
+    }
+
+    fn get_shell_prompt() -> String {
+        format!(
+            "{}@{}$",
+            env::var("USER").unwrap(),
+            gethostname::gethostname().into_string().unwrap()
+        )
     }
 
     pub fn view(value: View) -> &'static str {
@@ -501,16 +514,16 @@ mod tests {
         case(View::All, "all")
     )]
     fn format_view(value: View, expected: &str) {
-        assert_eq!(super::formatter::view(value), expected);
+        assert_eq!(super::pp::view(value), expected);
     }
 
     #[rstest(value, expected, case(true, "sensitive"), case(false, "insensitive"))]
     fn format_case(value: bool, expected: &str) {
-        assert_eq!(super::formatter::case(value), expected);
+        assert_eq!(super::pp::case(value), expected);
     }
 
     #[rstest(value, expected, case(true, "on"), case(false, "off"))]
     fn format_regex_mode(value: bool, expected: &str) {
-        assert_eq!(super::formatter::regex_mode(value), expected);
+        assert_eq!(super::pp::regex_mode(value), expected);
     }
 }

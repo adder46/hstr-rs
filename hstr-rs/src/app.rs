@@ -1,79 +1,38 @@
-use crate::sort::sort;
-use crate::util::{self, read_file};
+use crate::{hstr, io, sort};
 use itertools::Itertools;
 use regex::{escape, Regex, RegexBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 #[derive(Clone)]
-pub struct History {
-    sorted: Vec<String>,
-    favorites: Vec<String>,
-    all: Vec<String>,
-}
-
-#[derive(Clone)]
 pub struct Application {
     pub case_sensitivity: bool,
-    pub commands: History,
-    pub raw_history: Vec<String>,
     pub regex_mode: bool,
-    pub search_string: String,
-    pub shell: String,
-    pub to_restore: History,
     pub view: View,
+    pub shell: String,
+    pub search_string: String,
+    pub raw_history: Vec<String>,
+    pub commands: Commands,
+    pub to_restore: Commands,
 }
 
 impl Application {
     pub fn new(shell: &str) -> Self {
         let (raw_history, commands) = match shell {
-            "bash" => {
-                let history = read_file(".bash_history").unwrap();
-                let commands = History {
-                    sorted: sort(history.clone()),
-                    favorites: read_file(".config/hstr-rs/.bash_favorites").unwrap(),
-                    all: history.clone().into_iter().unique().collect(),
-                };
-                (history, commands)
-            }
-            "zsh" => {
-                let history = util::zsh_history::process()
-                    .split('\n')
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>();
-                let commands = History {
-                    sorted: sort(history.clone()),
-                    favorites: read_file(".config/hstr-rs/.zsh_favorites").unwrap(),
-                    all: history.clone().into_iter().unique().collect(),
-                };
-                (history, commands)
-            }
+            "bash" => hstr::get_bash_history(),
+            "zsh" => hstr::get_zsh_history(),
             _ => unreachable!(),
         };
         Self {
             case_sensitivity: false,
-            commands: commands.clone(),
-            raw_history,
             regex_mode: false,
-            search_string: String::new(),
-            shell: shell.to_string(),
-            to_restore: commands,
             view: View::Sorted,
+            shell: shell.to_string(),
+            search_string: String::new(),
+            raw_history,
+            commands: commands.clone(),
+            to_restore: commands,
         }
-    }
-
-    pub fn reload_history(&mut self) {
-        let commands = History {
-            sorted: sort(self.raw_history.clone()),
-            favorites: read_file(&format!(".config/hstr-rs/.{}_favorites", self.shell)).unwrap(),
-            all: self.raw_history.clone().into_iter().unique().collect(),
-        };
-        self.to_restore = commands;
-        self.restore();
-    }
-
-    pub fn restore(&mut self) {
-        self.commands = self.to_restore.clone();
     }
 
     pub fn commands(&self, view: View) -> &[String] {
@@ -135,6 +94,17 @@ impl Application {
         self.raw_history.retain(|x| *x != command);
     }
 
+    pub fn reload_history(&mut self) {
+        let commands = Commands {
+            sorted: sort::sort(self.raw_history.clone()),
+            favorites: io::read_from_home(&format!(".config/hstr-rs/.{}_favorites", self.shell))
+                .unwrap(),
+            all: self.raw_history.clone().into_iter().unique().collect(),
+        };
+        self.to_restore = commands;
+        self.commands = self.to_restore.clone();
+    }
+
     pub fn toggle_case(&mut self) {
         self.case_sensitivity = !self.case_sensitivity;
     }
@@ -149,6 +119,23 @@ impl Application {
             1 => View::Favorites,
             2 => View::All,
             _ => unreachable!(),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Commands {
+    pub sorted: Vec<String>,
+    pub favorites: Vec<String>,
+    pub all: Vec<String>,
+}
+
+impl Commands {
+    pub fn from_history(shell: &str, history: &[String]) -> Self {
+        Self {
+            sorted: sort::sort(history.to_vec()),
+            favorites: io::read_from_home(format!(".config/hstr-rs/.{}_favorites", shell)).unwrap(),
+            all: history.to_vec().into_iter().unique().collect(),
         }
     }
 }
@@ -200,7 +187,7 @@ pub mod fixtures {
     #[fixture]
     pub fn fake_app(fake_history: Vec<String>) -> Application {
         let mut app = Application::new("bash");
-        let fake_commands = History {
+        let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
             sorted: fake_history,
