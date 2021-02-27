@@ -1,8 +1,8 @@
-# append new history items to .bash_history
+# append new history items to .zsh_history
 setopt INC_APPEND_HISTORY
 # don't put duplicate lines
 setopt HIST_IGNORE_ALL_DUPS
-# don't put lines starting with space in the history
+# don't put lines starting with space
 setopt HIST_IGNORE_SPACE
 # increase history file size
 HISTFILESIZE=1000000

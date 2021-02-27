@@ -20,7 +20,7 @@ pub mod zsh {
     use regex::Regex;
 
     pub fn process_history() -> String {
-        let history = io::read_as_bytes().unwrap();
+        let history = io::read_as_bytes(".zsh_history").unwrap();
         let unmetafied = unmetafy(history);
         remove_timestamps(String::from_utf8(unmetafied).unwrap())
     }

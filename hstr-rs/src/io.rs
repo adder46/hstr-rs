@@ -5,10 +5,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn read_as_bytes() -> Result<Vec<u8>, Error> {
+pub fn read_as_bytes(path: impl AsRef<Path>) -> Result<Vec<u8>, Error> {
     let home = dirs::home_dir().unwrap();
-    let path = home.join(".zsh_history");
-    let mut file = File::open(path)?;
+    let target = home.join(path);
+    let mut file = File::open(target)?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)?;
     Ok(buffer)
@@ -53,4 +53,22 @@ pub fn echo(command: String) {
             ioctl(0, TIOCSTI, byte);
         }
     }
+}
+
+pub fn print_config(shell: &str) {
+    match shell {
+        "bash" => print_bash_config(),
+        "zsh" => print_zsh_config(),
+        _ => println!("Available options: bash, zsh"),
+    }
+}
+
+fn print_bash_config() {
+    let bash_config = include_str!("config/bash");
+    println!("{}", bash_config);
+}
+
+fn print_zsh_config() {
+    let zsh_config = include_str!("config/zsh");
+    println!("{}", zsh_config);
 }

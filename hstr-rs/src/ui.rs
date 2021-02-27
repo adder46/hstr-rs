@@ -1,9 +1,9 @@
 use crate::{
     app::{Application, View},
     io::{echo, write_to_home},
-    util::substring_indices,
 };
 use pp::*;
+use regex::Regex;
 use std::io::Error;
 
 #[cfg(test)]
@@ -30,9 +30,8 @@ pub struct UserInterface {
 }
 
 impl UserInterface {
-    pub fn new() -> Self {
-        let shell = setenv::get_shell().get_name();
-        let app = Application::new(shell);
+    pub fn new(sh: String) -> Self {
+        let app = Application::new(sh);
         Self {
             app,
             page: 1,
@@ -180,7 +179,7 @@ impl UserInterface {
                  * Finally, paint selection
                  */
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
-                let matches = substring_indices(cmd, &self.app.search_string);
+                let matches = self.substring_indices(cmd, &self.app.search_string);
                 if !matches.is_empty() {
                     self.paint_matched_chars(cmd, matches, row_idx);
                 }
@@ -190,6 +189,13 @@ impl UserInterface {
                 self.paint_selected(cmd, row_idx);
             });
         self.paint_bars();
+    }
+
+    fn substring_indices<'a>(&self, string: &'a str, substring: &'a str) -> Vec<usize> {
+        match Regex::new(substring) {
+            Ok(r) => r.find_iter(string).flat_map(|m| m.range()).collect(),
+            Err(_) => vec![],
+        }
     }
 
     fn paint_matched_chars(&self, command: &str, indices: Vec<usize>, row_idx: usize) {
@@ -453,7 +459,8 @@ mod tests {
         case(5, vec![])
     )]
     fn get_page(page: i32, expected: Vec<&str>, fake_app: Application) {
-        let mut user_interface = UserInterface::new();
+        let sh = "bash".to_string();
+        let mut user_interface = UserInterface::new(sh);
         user_interface.app = fake_app;
         user_interface.page = page;
         assert_eq!(user_interface.page_contents(), expected);
@@ -473,7 +480,8 @@ mod tests {
         case(1, 4, Direction::Backward)
     )]
     fn turn_page(current: i32, expected: i32, direction: Direction, fake_app: Application) {
-        let mut user_interface = UserInterface::new();
+        let sh = "bash".to_string();
+        let mut user_interface = UserInterface::new(sh);
         user_interface.app = fake_app;
         user_interface.page = current;
         user_interface.turn_page(direction);
@@ -489,19 +497,26 @@ mod tests {
         case("ping -c 10 www.google.com", "[0-9]+", vec![8, 9])
     )]
     fn matched_chars_indices(string: &str, substring: &str, expected: Vec<usize>) {
-        assert_eq!(super::substring_indices(string, substring), expected);
+        let sh = "bash".to_string();
+        let user_interface = UserInterface::new(sh);
+        assert_eq!(
+            user_interface.substring_indices(string, substring),
+            expected
+        );
     }
 
     #[rstest()]
     fn page_size(fake_app: Application) {
-        let mut user_interface = UserInterface::new();
+        let sh = "bash".to_string();
+        let mut user_interface = UserInterface::new(sh);
         user_interface.app = fake_app;
         assert_eq!(user_interface.page_size(), 7);
     }
 
     #[rstest()]
     fn total_pages(fake_app: Application) {
-        let mut user_interface = UserInterface::new();
+        let sh = "bash".to_string();
+        let mut user_interface = UserInterface::new(sh);
         user_interface.app = fake_app;
         assert_eq!(user_interface.total_pages(), 4);
     }

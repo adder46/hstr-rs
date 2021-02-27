@@ -17,8 +17,8 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn new(shell: &str) -> Self {
-        let (raw_history, commands) = match shell {
+    pub fn new(shell: String) -> Self {
+        let (raw_history, commands) = match shell.as_str() {
             "bash" => hstr::get_bash_history(),
             "zsh" => hstr::get_zsh_history(),
             _ => unreachable!(),
@@ -27,7 +27,7 @@ impl Application {
             case_sensitivity: false,
             regex_mode: false,
             view: View::Sorted,
-            shell: shell.to_string(),
+            shell,
             search_string: String::new(),
             raw_history,
             commands: commands.clone(),
@@ -186,7 +186,7 @@ pub mod fixtures {
 
     #[fixture]
     pub fn fake_app(fake_history: Vec<String>) -> Application {
-        let mut app = Application::new("bash");
+        let mut app = Application::new("bash".to_string());
         let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
@@ -296,7 +296,7 @@ mod tests {
         case(View::All, View::Sorted)
     )]
     fn toggle_view(before: View, after: View) {
-        let mut app = Application::new("bash");
+        let mut app = Application::new("bash".to_string());
         app.view = before;
         app.toggle_view();
         assert_eq!(app.view, after);
@@ -304,7 +304,7 @@ mod tests {
 
     #[rstest(regex_mode, case(true), case(false))]
     fn toggle_regex_mode(regex_mode: bool) {
-        let mut app = Application::new("bash");
+        let mut app = Application::new("bash".to_string());
         app.regex_mode = regex_mode;
         app.toggle_regex_mode();
         assert_eq!(app.regex_mode, !regex_mode);
@@ -312,7 +312,7 @@ mod tests {
 
     #[rstest(case_sensitivity, case(true), case(false))]
     fn toggle_case(case_sensitivity: bool) {
-        let mut app = Application::new("bash");
+        let mut app = Application::new("bash".to_string());
         app.case_sensitivity = case_sensitivity;
         app.toggle_case();
         assert_eq!(app.case_sensitivity, !case_sensitivity);

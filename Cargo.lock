@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "hstr-rs"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "clap",
  "dirs",
@@ -203,11 +203,9 @@ dependencies = [
  "gethostname",
  "itertools",
  "libc",
- "maplit",
  "ncurses",
  "regex",
  "rstest",
- "setenv",
  "strum",
  "strum_macros",
 ]
@@ -232,12 +230,6 @@ name = "libc"
 version = "0.2.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1482821306169ec4d07f6aca392a4681f66c75c9918aa49641a2595db64053cb"
-
-[[package]]
-name = "maplit"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "memchr"
@@ -363,12 +355,6 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-
-[[package]]
-name = "setenv"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5ef81b975260e7b1f2d73d570b03f59a71d468c1a7723a9262f2680653cb29e"
 
 [[package]]
 name = "strsim"

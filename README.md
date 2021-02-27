@@ -30,51 +30,27 @@ If on bash, run:
 hstr-rs --show-config bash >> ~/.bashrc
 ```
 
-...or manually add the lines below to your `.bashrc`:
-
-```sh
-# append new history items to .bash_history
-shopt -s histappend
-# don't put duplicate lines or lines starting with space in the history
-HISTCONTROL=ignoreboth
-# increase history file size
-HISTFILESIZE=1000000
-# increase history size
-HISTSIZE=${HISTFILESIZE}
-# sync entries in memory with .bash_history, and vice-versa
-export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
-# bind hstr-rs to CTRL + H
-if [[ $- =~ .*i.* ]]; then bind '"\C-h": "hstr-rs \C-j"'; fi
-```
+...or manually add [these lines](hstr-rs/src/config/bash) to your `.bashrc`.
 
 For zsh, run:
 
 ```
 hstr-rs --show-config zsh >> ~/.zshrc
 ```
-...or manually add the lines below to your `.zshrc`:
-
-```zsh
-# append new history items to .bash_history
-setopt INC_APPEND_HISTORY
-# don't put duplicate lines
-setopt HIST_IGNORE_ALL_DUPS
-# don't put lines starting with space in the history
-setopt HIST_IGNORE_SPACE
-# increase history file size
-HISTFILESIZE=1000000
-# increase history size
-HISTSIZE=${HISTFILESIZE}
-# bind hstr-rs to CTRL + H
-bindkey -s '^H' 'hstr-rs^M'
-```
+...or manually add [these lines](hstr-rs/src/config/zsh) to your `.zshrc`.
 
 ## Usage
 ​
-The most convenient option if you're using bash is to make the alias below:
+The most convenient is to make the alias. Depending on your shell, you may want:
 
 ```sh
-alias hh=hstr-rs
+alias hh='hstr-rs bash'
+```
+
+or
+
+```sh
+alias hh='hstr-rs zsh'
 ```
 
 Then invoke the program with `hh`.
