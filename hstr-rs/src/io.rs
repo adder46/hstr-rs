@@ -59,7 +59,7 @@ pub fn print_config(shell: &str) {
     match shell {
         "bash" => print_bash_config(),
         "zsh" => print_zsh_config(),
-        _ => println!("Available options: bash, zsh"),
+        _ => eprintln!("Available options: bash, zsh"),
     }
 }
 
