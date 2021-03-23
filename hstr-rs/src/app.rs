@@ -165,7 +165,7 @@ pub enum View {
     All = 2,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Search {
     Exact = 0,
     Regex = 1,
@@ -203,6 +203,9 @@ pub mod fixtures {
             "cd ~/Downloads",
             "make -j4",
             "gpg --card-status",
+            "echo šampion",
+            "nano .github/workflows/build.yml",
+            "cd /home/bwk/",
         ]
         .iter()
         .map(|&x| x.into())
@@ -222,124 +225,131 @@ pub mod fixtures {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::{fixtures::*, *};
-//     use rstest::rstest;
+#[cfg(test)]
+mod tests {
+    use super::{fixtures::*, *};
+    use rstest::rstest;
 
-//     #[rstest(
-//         search_string,
-//         expected,
-//         search_mode,
-//         case_sensitivity,
-//         case("cat", vec!["cat spam", "cat SPAM"], false, false),
-//         case("spam", vec!["cat spam", "cat SPAM", "grep -r spam ."], false, false),
-//         case("SPAM", vec!["cat SPAM"], false, true),
-//         case("[0-9]+", vec!["git rebase -i HEAD~2", "ping -c 10 www.google.com", "xfce4-panel -r", "make -j4"], true, false)
-//     )]
-//     fn search(
-//         search_string: &str,
-//         expected: Vec<&str>,
-//         search_mode: bool,
-//         case_sensitivity: bool,
-//         mut fake_app: Application,
-//     ) {
-//         fake_app.search_mode = search_mode;
-//         fake_app.case_sensitivity = case_sensitivity;
-//         fake_app.search_string = String::from(search_string);
-//         fake_app.create_search_regex();
-//         fake_app.search();
-//         assert_eq!(fake_app.commands(fake_app.view), expected);
-//     }
+    #[rstest(
+        search_string,
+        expected,
+        search_mode,
+        case_sensitivity,
+        case("cat", vec!["cat spam", "cat SPAM"], Search::Exact, false),
+        case("spam", vec!["cat spam", "cat SPAM", "grep -r spam ."], Search::Exact, false),
+        case("SPAM", vec!["cat SPAM"], Search::Exact, true),
+        case("[0-9]+", vec!["git rebase -i HEAD~2", "ping -c 10 www.google.com", "xfce4-panel -r", "make -j4"], Search::Regex, false),
+        case("šp", vec!["echo šampion"], Search::Fuzzy, false),
+        case("hwk", vec!["nano .github/workflows/build.yml", "cd /home/bwk/"], Search::Fuzzy, false)
+    )]
+    fn search(
+        search_string: &str,
+        expected: Vec<&str>,
+        search_mode: Search,
+        case_sensitivity: bool,
+        mut fake_app: Application,
+    ) {
+        fake_app.search_mode = search_mode;
+        fake_app.case_sensitivity = case_sensitivity;
+        fake_app.search_string = String::from(search_string);
+        fake_app.search();
+        assert_eq!(fake_app.commands(fake_app.view), expected);
+    }
 
-//     #[rstest(
-//         view,
-//         expected,
-//         case(View::Sorted, fake_history()),
-//         case(View::Favorites, Vec::new()),
-//         case(View::All, fake_history())
-//     )]
-//     fn get_commands(view: View, expected: Vec<String>, mut fake_app: Application) {
-//         fake_app.view = view;
-//         let commands = fake_app.commands(fake_app.view);
-//         assert_eq!(commands, expected);
-//     }
+    #[rstest(
+        view,
+        expected,
+        case(View::Sorted, fake_history()),
+        case(View::Favorites, Vec::new()),
+        case(View::All, fake_history())
+    )]
+    fn get_commands(view: View, expected: Vec<String>, mut fake_app: Application) {
+        fake_app.view = view;
+        let commands = fake_app.commands(fake_app.view);
+        assert_eq!(commands, expected);
+    }
 
-//     #[rstest(
-//         search_string,
-//         search_mode,
-//         case_sensitivity,
-//         expected,
-//         case(String::from("print("), false, false, "print\\("),
-//         case(String::from("print("), true, false, ""),
-//         case(String::from("print("), false, true, "print\\("),
-//         case(String::from("print("), true, true, "")
-//     )]
-//     fn create_search_regex(
-//         search_string: String,
-//         search_mode: bool,
-//         case_sensitivity: bool,
-//         expected: &str,
-//         mut fake_app: Application,
-//     ) {
-//         fake_app.search_string = search_string;
-//         fake_app.search_mode = search_mode;
-//         fake_app.case_sensitivity = case_sensitivity;
-//         let regex = fake_app.create_search_regex();
-//         assert_eq!(regex.unwrap_or(Regex::new("").unwrap()).as_str(), expected);
-//     }
+    #[rstest(
+        search_string,
+        search_mode,
+        case_sensitivity,
+        expected,
+        case(String::from("print("), Search::Exact, false, "print\\("),
+        case(String::from("print("), Search::Regex, false, ""),
+        case(String::from("print("), Search::Exact, true, "print\\("),
+        case(String::from("print("), Search::Regex, true, "")
+    )]
+    fn create_search_regex(
+        search_string: String,
+        search_mode: Search,
+        case_sensitivity: bool,
+        expected: &str,
+        mut fake_app: Application,
+    ) {
+        fake_app.search_string = search_string;
+        fake_app.search_mode = search_mode;
+        fake_app.case_sensitivity = case_sensitivity;
+        let regex = fake_app.create_search_regex();
+        assert_eq!(regex.unwrap_or(Regex::new("").unwrap()).as_str(), expected);
+    }
 
-//     #[rstest(
-//         command,
-//         case(String::from("cat spam")),
-//         case(String::from("grep -r spam .")),
-//         case(String::from("ping -c 10 www.google.com"))
-//     )]
-//     fn add_or_rm_fav(command: String, mut fake_app: Application) {
-//         fake_app.add_or_rm_fav(command.clone());
-//         assert!(fake_app.commands(View::Favorites).contains(&command));
-//         fake_app.add_or_rm_fav(command.clone());
-//         assert!(!fake_app.commands(View::Favorites).contains(&command));
-//     }
+    #[rstest(
+        command,
+        case(String::from("cat spam")),
+        case(String::from("grep -r spam .")),
+        case(String::from("ping -c 10 www.google.com"))
+    )]
+    fn add_or_rm_fav(command: String, mut fake_app: Application) {
+        fake_app.add_or_rm_fav(command.clone());
+        assert!(fake_app.commands(View::Favorites).contains(&command));
+        fake_app.add_or_rm_fav(command.clone());
+        assert!(!fake_app.commands(View::Favorites).contains(&command));
+    }
 
-//     #[rstest(
-//         command,
-//         case(String::from("cat spam")),
-//         case(String::from("grep -r spam .")),
-//         case(String::from("ping -c 10 www.google.com"))
-//     )]
-//     fn delete_from_history(command: String, mut fake_app: Application) {
-//         fake_app.delete_from_history(command.clone());
-//         assert!(!fake_app.commands(fake_app.view).contains(&command));
-//     }
+    #[rstest(
+        command,
+        case(String::from("cat spam")),
+        case(String::from("grep -r spam .")),
+        case(String::from("ping -c 10 www.google.com"))
+    )]
+    fn delete_from_history(command: String, mut fake_app: Application) {
+        fake_app.delete_from_history(command.clone());
+        assert!(!fake_app.commands(fake_app.view).contains(&command));
+    }
 
-//     #[rstest(
-//         before,
-//         after,
-//         case(View::Sorted, View::Favorites),
-//         case(View::Favorites, View::All),
-//         case(View::All, View::Sorted)
-//     )]
-//     fn toggle_view(before: View, after: View) {
-//         let mut app = Application::new(String::new());
-//         app.view = before;
-//         app.toggle_view();
-//         assert_eq!(app.view, after);
-//     }
+    #[rstest(
+        before,
+        after,
+        case(View::Sorted, View::Favorites),
+        case(View::Favorites, View::All),
+        case(View::All, View::Sorted)
+    )]
+    fn toggle_view(before: View, after: View) {
+        let mut app = Application::new(String::new());
+        app.view = before;
+        app.toggle_view();
+        assert_eq!(app.view, after);
+    }
 
-//     #[rstest(search_mode, case(true), case(false))]
-//     fn toggle_search_mode(search_mode: bool) {
-//         let mut app = Application::new(String::new());
-//         app.search_mode = search_mode;
-//         app.toggle_search_mode();
-//         assert_eq!(app.search_mode, !search_mode);
-//     }
+    #[rstest(
+        before,
+        after,
+        case(Search::Exact, Search::Regex),
+        case(Search::Regex, Search::Fuzzy),
+        case(Search::Fuzzy, Search::Exact)
+    )]
+    fn toggle_search_mode(before: Search, after: Search) {
+        let mut app = Application::new(String::new());
+        app.search_mode = before;
+        app.toggle_search_mode();
+        assert_eq!(app.search_mode, after);
+    }
 
-//     #[rstest(case_sensitivity, case(true), case(false))]
-//     fn toggle_case(case_sensitivity: bool) {
-//         let mut app = Application::new(String::new());
-//         app.case_sensitivity = case_sensitivity;
-//         app.toggle_case();
-//         assert_eq!(app.case_sensitivity, !case_sensitivity);
-//     }
-// }
+    #[rstest(case_sensitivity, case(true), case(false))]
+    fn toggle_case(case_sensitivity: bool) {
+        let mut app = Application::new(String::new());
+        app.case_sensitivity = case_sensitivity;
+        app.toggle_case();
+        assert_eq!(app.case_sensitivity, !case_sensitivity);
+    }
+}

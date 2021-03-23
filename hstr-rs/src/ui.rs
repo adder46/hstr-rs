@@ -185,6 +185,10 @@ impl UserInterface {
                  * Paint favorite, if any; then
                  * Finally, paint selection
                  */
+                let cmd = &cmd
+                    .chars()
+                    .take(nc::COLS() as usize - 2)
+                    .collect::<String>();
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
                 match self.app.search_mode {
                     crate::app::Search::Exact | crate::app::Search::Regex => {
@@ -432,7 +436,7 @@ mod pp {
     }
 
     pub fn ljust(string: &str) -> String {
-        format!("{0:1$}", string, nc::COLS() as usize - 1)
+        format!("{0:1$}", string, nc::COLS() as usize - 2)
     }
 }
 
@@ -445,7 +449,7 @@ pub enum Direction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::{fixtures::*, View};
+    use crate::app::{fixtures::*, Search, View};
     use rstest::rstest;
 
     #[rstest(
@@ -481,6 +485,9 @@ mod tests {
         case(4, vec![
             "make -j4",
             "gpg --card-status",
+            "echo šampion",
+            "nano .github/workflows/build.yml",
+            "cd /home/bwk/",
         ]),
         case(5, vec![])
     )]
@@ -558,8 +565,14 @@ mod tests {
         assert_eq!(super::pp::case(value), expected);
     }
 
-    // #[rstest(value, expected, case(true, "on"), case(false, "off"))]
-    // fn format_search_mode(value: bool, expected: &str) {
-    //     assert_eq!(super::pp::search_mode(value), expected);
-    // }
+    #[rstest(
+        value,
+        expected,
+        case(Search::Exact, "exact"),
+        case(Search::Regex, "regex"),
+        case(Search::Fuzzy, "fuzzy")
+    )]
+    fn format_search_mode(value: Search, expected: &str) {
+        assert_eq!(super::pp::search_mode(value), expected);
+    }
 }
