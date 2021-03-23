@@ -197,7 +197,6 @@ dependencies = [
 name = "hstr-rs"
 version = "0.9.0"
 dependencies = [
- "clap",
  "dirs",
  "fake_ncurses",
  "gethostname",
