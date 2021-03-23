@@ -17,8 +17,9 @@ pub struct Application {
 }
 
 impl Application {
-    pub fn new(shell: String) -> Self {
-        let (raw_history, commands) = match shell.as_str() {
+    pub fn new(search_string: String) -> Self {
+        let shell = setenv::get_shell().get_name();
+        let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
             "zsh" => hstr::get_zsh_history(),
             _ => unreachable!(),
@@ -27,8 +28,8 @@ impl Application {
             case_sensitivity: false,
             regex_mode: false,
             view: View::Sorted,
-            shell,
-            search_string: String::new(),
+            shell: shell.to_string(),
+            search_string,
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
@@ -186,7 +187,7 @@ pub mod fixtures {
 
     #[fixture]
     pub fn fake_app(fake_history: Vec<String>) -> Application {
-        let mut app = Application::new("bash".to_string());
+        let mut app = Application::new(String::new());
         let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
@@ -296,7 +297,7 @@ mod tests {
         case(View::All, View::Sorted)
     )]
     fn toggle_view(before: View, after: View) {
-        let mut app = Application::new("bash".to_string());
+        let mut app = Application::new(String::new());
         app.view = before;
         app.toggle_view();
         assert_eq!(app.view, after);
@@ -304,7 +305,7 @@ mod tests {
 
     #[rstest(regex_mode, case(true), case(false))]
     fn toggle_regex_mode(regex_mode: bool) {
-        let mut app = Application::new("bash".to_string());
+        let mut app = Application::new(String::new());
         app.regex_mode = regex_mode;
         app.toggle_regex_mode();
         assert_eq!(app.regex_mode, !regex_mode);
@@ -312,7 +313,7 @@ mod tests {
 
     #[rstest(case_sensitivity, case(true), case(false))]
     fn toggle_case(case_sensitivity: bool) {
-        let mut app = Application::new("bash".to_string());
+        let mut app = Application::new(String::new());
         app.case_sensitivity = case_sensitivity;
         app.toggle_case();
         assert_eq!(app.case_sensitivity, !case_sensitivity);

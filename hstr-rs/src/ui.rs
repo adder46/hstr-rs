@@ -30,8 +30,8 @@ pub struct UserInterface {
 }
 
 impl UserInterface {
-    pub fn new(sh: String) -> Self {
-        let app = Application::new(sh);
+    pub fn new(query: String) -> Self {
+        let app = Application::new(query);
         Self {
             app,
             page: 1,
@@ -474,8 +474,7 @@ mod tests {
         case(5, vec![])
     )]
     fn get_page(page: i32, expected: Vec<&str>, fake_app: Application) {
-        let sh = "bash".to_string();
-        let mut user_interface = UserInterface::new(sh);
+        let mut user_interface = UserInterface::new(String::new());
         user_interface.app = fake_app;
         user_interface.page = page;
         assert_eq!(user_interface.page_contents(), expected);
@@ -495,8 +494,7 @@ mod tests {
         case(1, 4, Direction::Backward)
     )]
     fn turn_page(current: i32, expected: i32, direction: Direction, fake_app: Application) {
-        let sh = "bash".to_string();
-        let mut user_interface = UserInterface::new(sh);
+        let mut user_interface = UserInterface::new(String::new());
         user_interface.app = fake_app;
         user_interface.page = current;
         user_interface.turn_page(direction);
@@ -512,8 +510,7 @@ mod tests {
         case("ping -c 10 www.google.com", "[0-9]+", vec![8, 9])
     )]
     fn matched_chars_indices(string: &str, substring: &str, expected: Vec<usize>) {
-        let sh = "bash".to_string();
-        let user_interface = UserInterface::new(sh);
+        let user_interface = UserInterface::new(String::new());
         assert_eq!(
             user_interface.substring_indices(string, substring),
             expected
@@ -522,16 +519,14 @@ mod tests {
 
     #[rstest()]
     fn page_size(fake_app: Application) {
-        let sh = "bash".to_string();
-        let mut user_interface = UserInterface::new(sh);
+        let mut user_interface = UserInterface::new(String::new());
         user_interface.app = fake_app;
         assert_eq!(user_interface.page_size(), 7);
     }
 
     #[rstest()]
     fn total_pages(fake_app: Application) {
-        let sh = "bash".to_string();
-        let mut user_interface = UserInterface::new(sh);
+        let mut user_interface = UserInterface::new(String::new());
         user_interface.app = fake_app;
         assert_eq!(user_interface.total_pages(), 4);
     }
