@@ -379,7 +379,7 @@ mod pp {
     pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
         let total_pages = user_interface.total_pages();
         format!(
-            "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
+            "- view:{} (C-/) - search:{} (C-e) - case:{} (C-t) - page {}/{} -",
             view(app.view),
             search_mode(app.search_mode),
             case(app.case_sensitivity),
