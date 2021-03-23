@@ -31,5 +31,6 @@ fn main() -> Result<(), std::io::Error> {
     user_interface.populate_screen();
     user_interface.mainloop()?;
     ui::curses::teardown();
+
     Ok(())
 }
