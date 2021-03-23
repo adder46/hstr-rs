@@ -222,7 +222,11 @@ impl UserInterface {
         command.char_indices().for_each(|(char_idx, ch)| {
             if indices.contains(&char_idx) {
                 nc::attron(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                nc::mvaddstr(row_idx as i32 + 3, char_idx as i32 + 1 - (previous_len - 1) - skipped, &ch.to_string());
+                nc::mvaddstr(
+                    row_idx as i32 + 3,
+                    char_idx as i32 + 1 - (previous_len - 1) - skipped,
+                    &ch.to_string(),
+                );
                 nc::attroff(nc::COLOR_PAIR(5) | nc::A_BOLD());
                 skipped += previous_len - 1;
                 previous_len = ch.len_utf8() as i32;
