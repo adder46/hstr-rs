@@ -41,16 +41,10 @@ hstr-rs --show-config zsh >> ~/.zshrc
 
 ## Usage
 ​
-The most convenient is to make the alias. Depending on your shell, you may want:
+The most convenient is to make the alias:
 
 ```sh
-alias hh='hstr-rs bash'
-```
-
-or
-
-```sh
-alias hh='hstr-rs zsh'
+alias hh='hstr-rs'
 ```
 
 Then invoke the program with `hh`.
