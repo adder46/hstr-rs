@@ -2,15 +2,21 @@ use io::print_config;
 use structopt::StructOpt;
 
 mod app;
-mod cli;
 mod hstr;
 mod io;
 mod sort;
 mod ui;
 
+#[derive(Debug, StructOpt)]
+struct Opt {
+    query: Vec<String>,
+    #[structopt(name = "show-config", long)]
+    show_config: Option<String>,
+}
+
 #[allow(unreachable_code)]
 fn main() -> Result<(), std::io::Error> {
-    let opt = cli::Opt::from_args();
+    let opt = Opt::from_args();
     match opt.show_config {
         Some(sh) => {
             print_config(sh.as_str());
