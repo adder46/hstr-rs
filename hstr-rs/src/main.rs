@@ -20,7 +20,7 @@ fn main() -> Result<(), std::io::Error> {
     match opt.show_config {
         Some(sh) => {
             print_config(sh.as_str());
-            std::process::exit(0);
+            return Ok(());
         }
         None => {}
     }
