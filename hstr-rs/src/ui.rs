@@ -50,27 +50,39 @@ impl UserInterface {
                         self.populate_screen();
                     }
                     CTRL_F => {
-                        let command = self.selected();
-                        if self.app.view == View::Favorites {
-                            self.retain_selected();
+                        match self.selected() {
+                            Some(command) => {
+                                if self.app.view == View::Favorites {
+                                    self.retain_selected();
+                                }
+                                self.app.add_or_rm_fav(command);
+                                write_to_home(
+                                    &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
+                                    self.app.commands(View::Favorites),
+                                )?;
+                                nc::clear();
+                                self.populate_screen();
+                            },
+                            None => continue,
                         }
-                        self.app.add_or_rm_fav(command);
-                        write_to_home(
-                            &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
-                            self.app.commands(View::Favorites),
-                        )?;
-                        nc::clear();
-                        self.populate_screen();
                     }
                     TAB => {
-                        let command = self.selected();
-                        echo(command);
-                        break;
+                        match self.selected() {
+                            Some(command) => {
+                                echo(command);
+                                break;
+                            }
+                            None => continue,
+                        }
                     }
                     ENTER => {
-                        let command = self.selected();
-                        echo(command + "\n");
-                        break;
+                        match self.selected() {
+                            Some(command) => {
+                                echo(command + "\n");
+                                break;
+                            }
+                            None => continue,
+                        }
                     }
                     CTRL_T => {
                         self.app.toggle_case();
@@ -112,19 +124,23 @@ impl UserInterface {
                         self.populate_screen();
                     }
                     nc::KEY_DC => {
-                        let command = self.selected();
-                        self.ask_before_deletion(&command);
-                        if nc::getch() == Y {
-                            self.retain_selected();
-                            self.app.delete_from_history(command);
-                            write_to_home(
-                                &format!(".{}_history", self.app.shell),
-                                &self.app.raw_history,
-                            )?;
+                        match self.selected() {
+                            Some(command) => {
+                                self.ask_before_deletion(&command);
+                                if nc::getch() == Y {
+                                    self.retain_selected();
+                                    self.app.delete_from_history(command);
+                                    write_to_home(
+                                        &format!(".{}_history", self.app.shell),
+                                        &self.app.raw_history,
+                                    )?;
+                                }
+                                self.app.reload_history();
+                                nc::clear();
+                                self.populate_screen();
+                            }
+                            None => continue,
                         }
-                        self.app.reload_history();
-                        nc::clear();
-                        self.populate_screen();
                     }
                     nc::KEY_NPAGE => {
                         self.turn_page(Direction::Forward);
@@ -149,11 +165,10 @@ impl UserInterface {
         self.page_contents().len() as i32
     }
 
-    pub fn selected(&self) -> String {
+    pub fn selected(&self) -> Option<String> {
         self.page_contents()
             .get(self.selected as usize)
-            .unwrap()
-            .to_owned()
+            .cloned()
     }
 
     fn page_contents(&self) -> Vec<String> {
