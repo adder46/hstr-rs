@@ -17,12 +17,9 @@ struct Opt {
 #[allow(unreachable_code)]
 fn main() -> Result<(), std::io::Error> {
     let opt = Opt::from_args();
-    match opt.show_config {
-        Some(sh) => {
-            print_config(sh.as_str());
-            return Ok(());
-        }
-        None => {}
+    if let Some(sh) = opt.show_config {
+        print_config(sh.as_str());
+        return Ok(());
     }
     ui::curses::init();
     let query = opt.query.join(" ");
