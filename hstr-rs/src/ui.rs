@@ -2,6 +2,7 @@ use crate::{
     app::{Application, View},
     io::{echo, write_to_home},
 };
+use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use pp::*;
 use regex::Regex;
 use std::io::Error;
@@ -45,7 +46,7 @@ impl UserInterface {
             match user_input.unwrap() {
                 nc::WchResult::Char(ch) => match ch {
                     CTRL_E => {
-                        self.app.toggle_regex_mode();
+                        self.app.toggle_search_mode();
                         self.selected = 0;
                         self.populate_screen();
                     }
@@ -174,6 +175,7 @@ impl UserInterface {
     }
 
     pub fn populate_screen(&self) {
+        let matcher = SkimMatcherV2::default();
         self.page_contents()
             .iter()
             .enumerate()
@@ -184,9 +186,20 @@ impl UserInterface {
                  * Finally, paint selection
                  */
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
-                let matches = self.substring_indices(cmd, &self.app.search_string);
-                if !matches.is_empty() {
-                    self.paint_matched_chars(cmd, matches, row_idx);
+                match self.app.search_mode {
+                    crate::app::Search::Exact | crate::app::Search::Regex => {
+                        let matches = self.substring_indices(cmd, &self.app.search_string);
+                        if !matches.is_empty() {
+                            self.paint_matched_chars(cmd, matches, row_idx);
+                        }
+                    }
+                    crate::app::Search::Fuzzy => {
+                        if let Some(matches) =
+                            matcher.fuzzy_indices(cmd, &self.app.search_string.as_str())
+                        {
+                            self.paint_matched_chars(cmd, matches.1, row_idx);
+                        }
+                    }
                 }
                 if self.app.cmd_in_fav(cmd) {
                     self.paint_favorite(cmd.clone(), row_idx);
@@ -204,12 +217,20 @@ impl UserInterface {
     }
 
     fn paint_matched_chars(&self, command: &str, indices: Vec<usize>, row_idx: usize) {
+        let mut previous_len = 1;
+        let mut skipped = 0;
         command.char_indices().for_each(|(char_idx, ch)| {
             if indices.contains(&char_idx) {
                 nc::attron(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                nc::mvaddstr(row_idx as i32 + 3, char_idx as i32 + 1, &ch.to_string());
+                if previous_len > 1 {
+                    nc::mvaddstr(row_idx as i32 + 3, char_idx as i32 + 1 - (previous_len - 1) - skipped, &ch.to_string());
+                    skipped += previous_len - 1;
+                } else {
+                    nc::mvaddstr(row_idx as i32 + 3, char_idx as i32 + 1 - skipped, &ch.to_string());
+                }
                 nc::attroff(nc::COLOR_PAIR(5) | nc::A_BOLD());
             }
+            previous_len = ch.len_utf8() as i32;
         });
     }
 
@@ -346,7 +367,7 @@ pub mod curses {
 
 mod pp {
     /* Pretty printer */
-    use crate::app::{Application, View};
+    use crate::app::{Application, Search, View};
     use crate::ui::UserInterface;
     use ncurses as nc;
     use std::env;
@@ -356,7 +377,7 @@ mod pp {
         format!(
             "- view:{} (C-/) - regex:{} (C-e) - case:{} (C-t) - page {}/{} -",
             view(app.view),
-            regex_mode(app.regex_mode),
+            search_mode(app.search_mode),
             case(app.case_sensitivity),
             current_page(user_interface.page, total_pages),
             total_pages,
@@ -383,11 +404,11 @@ mod pp {
         }
     }
 
-    pub fn regex_mode(value: bool) -> &'static str {
-        if value {
-            "on"
-        } else {
-            "off"
+    pub fn search_mode(value: Search) -> &'static str {
+        match value {
+            Search::Exact => "exact",
+            Search::Regex => "regex",
+            Search::Fuzzy => "fuzzy",
         }
     }
 
@@ -537,8 +558,8 @@ mod tests {
         assert_eq!(super::pp::case(value), expected);
     }
 
-    #[rstest(value, expected, case(true, "on"), case(false, "off"))]
-    fn format_regex_mode(value: bool, expected: &str) {
-        assert_eq!(super::pp::regex_mode(value), expected);
-    }
+    // #[rstest(value, expected, case(true, "on"), case(false, "off"))]
+    // fn format_search_mode(value: bool, expected: &str) {
+    //     assert_eq!(super::pp::search_mode(value), expected);
+    // }
 }
