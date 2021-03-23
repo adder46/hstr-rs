@@ -25,8 +25,8 @@ fn main() -> Result<(), std::io::Error> {
         None => {}
     }
     ui::curses::init();
-    let processed_query = opt.query.join(" ");
-    let mut user_interface = ui::UserInterface::new(processed_query);
+    let query = opt.query.join(" ");
+    let mut user_interface = ui::UserInterface::new(query);
     user_interface.app.search();
     user_interface.populate_screen();
     user_interface.mainloop()?;
