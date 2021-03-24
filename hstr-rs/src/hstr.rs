@@ -1,4 +1,4 @@
-use crate::{state::Commands, io::read_from_home};
+use crate::{io::read_from_home, state::Commands};
 
 pub fn get_bash_history() -> (Vec<String>, Commands) {
     let history = read_from_home(".bash_history").unwrap();

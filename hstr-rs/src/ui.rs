@@ -1,6 +1,6 @@
 use crate::{
-    state::{State, SearchMode, View},
     io::{echo, write_to_home},
+    state::{SearchMode, State, View},
 };
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use pp::*;
@@ -390,7 +390,7 @@ pub mod curses {
 
 mod pp {
     /* Pretty printer */
-    use crate::state::{State, SearchMode, View};
+    use crate::state::{SearchMode, State, View};
     use crate::ui::UserInterface;
     use ncurses as nc;
     use std::env;
