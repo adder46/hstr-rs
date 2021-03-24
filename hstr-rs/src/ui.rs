@@ -1,5 +1,5 @@
 use crate::{
-    app::{Application, View},
+    app::{Application, Search, View},
     io::{echo, write_to_home},
 };
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
@@ -193,13 +193,13 @@ impl UserInterface {
                     .collect::<String>();
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
                 match self.app.search_mode {
-                    crate::app::Search::Exact | crate::app::Search::Regex => {
+                    Search::Exact | Search::Regex => {
                         let matches = self.substring_indices(cmd, &self.app.search_string);
                         if !matches.is_empty() {
                             self.paint_matched_chars(cmd, matches, row_idx);
                         }
                     }
-                    crate::app::Search::Fuzzy => {
+                    Search::Fuzzy => {
                         if let Some(matches) =
                             matcher.fuzzy_indices(cmd, &self.app.search_string.as_str())
                         {
