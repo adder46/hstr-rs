@@ -24,7 +24,7 @@ impl Application {
         let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
             "zsh" => hstr::get_zsh_history(),
-            _ => unreachable!(),
+            _ => panic!(format!("{} is not supported yet.", shell)),
         };
         Self {
             case_sensitivity: false,
