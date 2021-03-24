@@ -1,5 +1,5 @@
 use crate::{
-    app::{Application, Search, View},
+    state::{State, SearchMode, View},
     io::{echo, write_to_home},
 };
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
@@ -12,7 +12,7 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
-use unicode_width::UnicodeWidthChar as _; // 0.1.8
+use unicode_width::UnicodeWidthChar as _;
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
@@ -27,16 +27,16 @@ const CTRL_SLASH: u32 = 31;
 const Y: i32 = b'y' as i32;
 
 pub struct UserInterface {
-    pub app: Application,
+    pub state: State,
     pub page: i32,
     pub selected: i32,
 }
 
 impl UserInterface {
     pub fn new(query: String) -> Self {
-        let app = Application::new(query);
+        let state = State::new(query);
         Self {
-            app,
+            state,
             page: 1,
             selected: 0,
         }
@@ -48,19 +48,19 @@ impl UserInterface {
             match user_input.unwrap() {
                 nc::WchResult::Char(ch) => match ch {
                     CTRL_E => {
-                        self.app.toggle_search_mode();
+                        self.state.toggle_search_mode();
                         self.selected = 0;
                         self.populate_screen();
                     }
                     CTRL_F => match self.selected() {
                         Some(command) => {
-                            if self.app.view == View::Favorites {
+                            if self.state.view == View::Favorites {
                                 self.retain_selected();
                             }
-                            self.app.add_or_rm_fav(command);
+                            self.state.add_or_rm_fav(command);
                             write_to_home(
-                                &format!(".config/hstr-rs/.{}_favorites", self.app.shell),
-                                self.app.commands(View::Favorites),
+                                &format!(".config/hstr-rs/.{}_favorites", self.state.shell),
+                                self.state.commands(View::Favorites),
                             )?;
                             nc::clear();
                             self.populate_screen();
@@ -82,25 +82,25 @@ impl UserInterface {
                         None => continue,
                     },
                     CTRL_T => {
-                        self.app.toggle_case();
+                        self.state.toggle_case();
                         self.populate_screen();
                     }
                     ESC => break,
                     CTRL_SLASH => {
-                        self.app.toggle_view();
+                        self.state.toggle_view();
                         self.selected = 0;
                         self.page = 1;
                         nc::clear();
                         self.populate_screen();
                     }
                     _ => {
-                        self.app
+                        self.state
                             .search_string
                             .push(std::char::from_u32(ch).unwrap());
                         self.selected = 0;
                         self.page = 1;
                         nc::clear();
-                        self.app.search();
+                        self.state.search();
                         self.populate_screen();
                     }
                 },
@@ -114,10 +114,10 @@ impl UserInterface {
                         self.populate_screen();
                     }
                     nc::KEY_BACKSPACE => {
-                        self.app.search_string.pop();
-                        self.app.commands = self.app.to_restore.clone();
+                        self.state.search_string.pop();
+                        self.state.commands = self.state.to_restore.clone();
                         nc::clear();
-                        self.app.search();
+                        self.state.search();
                         self.populate_screen();
                     }
                     nc::KEY_DC => match self.selected() {
@@ -125,13 +125,13 @@ impl UserInterface {
                             self.ask_before_deletion(&command);
                             if nc::getch() == Y {
                                 self.retain_selected();
-                                self.app.delete_from_history(command);
+                                self.state.delete_from_history(command);
                                 write_to_home(
-                                    &format!(".{}_history", self.app.shell),
-                                    &self.app.raw_history,
+                                    &format!(".{}_history", self.state.shell),
+                                    &self.state.raw_history,
                                 )?;
                             }
-                            self.app.reload_history();
+                            self.state.reload_history();
                             nc::clear();
                             self.populate_screen();
                         }
@@ -165,8 +165,8 @@ impl UserInterface {
     }
 
     fn page_contents(&self) -> Vec<String> {
-        let current_view = self.app.view;
-        let commands = self.app.commands(current_view);
+        let current_view = self.state.view;
+        let commands = self.state.commands(current_view);
         match commands
             .chunks(nc::LINES() as usize - 3)
             .nth(self.page as usize - 1)
@@ -192,22 +192,22 @@ impl UserInterface {
                     .take(nc::COLS() as usize - 2)
                     .collect::<String>();
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
-                match self.app.search_mode {
-                    Search::Exact | Search::Regex => {
-                        let matches = self.substring_indices(cmd, &self.app.search_string);
+                match self.state.search_mode {
+                    SearchMode::Exact | SearchMode::Regex => {
+                        let matches = self.substring_indices(cmd, &self.state.search_string);
                         if !matches.is_empty() {
                             self.paint_matched_chars(cmd, matches, row_idx);
                         }
                     }
-                    Search::Fuzzy => {
+                    SearchMode::Fuzzy => {
                         if let Some(matches) =
-                            matcher.fuzzy_indices(cmd, &self.app.search_string.as_str())
+                            matcher.fuzzy_indices(cmd, &self.state.search_string.as_str())
                         {
                             self.paint_matched_chars(cmd, matches.1, row_idx);
                         }
                     }
                 }
-                if self.app.cmd_in_fav(cmd) {
+                if self.state.cmd_in_fav(cmd) {
                     self.paint_favorite(cmd.clone(), row_idx);
                 }
                 self.paint_selected(cmd, row_idx);
@@ -249,9 +249,9 @@ impl UserInterface {
     fn paint_bars(&self) {
         nc::mvaddstr(1, 1, LABEL);
         nc::attron(nc::COLOR_PAIR(3));
-        nc::mvaddstr(2, 1, &ljust(&status_bar(&self.app, self)));
+        nc::mvaddstr(2, 1, &ljust(&status_bar(&self.state, self)));
         nc::attroff(nc::COLOR_PAIR(3));
-        nc::mvaddstr(0, 1, &top_bar(&self.app.search_string));
+        nc::mvaddstr(0, 1, &top_bar(&self.state.search_string));
     }
 
     pub fn turn_page(&mut self, direction: Direction) {
@@ -260,7 +260,7 @@ impl UserInterface {
          * We are getting the potential page by subtracting 1
          * from the page number, because pages are 1-based, and
          * we need them to be 0-based for the calculation to work.
-         * Then we apply the direction which is always +1 or -1.
+         * Then we stately the direction which is always +1 or -1.
          *
          * We then use the remainder part of Euclidean division of
          * potential page over total number of pages, in order to
@@ -293,8 +293,8 @@ impl UserInterface {
     }
 
     pub fn total_pages(&self) -> i32 {
-        let current_view = self.app.view;
-        let commands = self.app.commands(current_view);
+        let current_view = self.state.view;
+        let commands = self.state.commands(current_view);
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
 
@@ -390,19 +390,19 @@ pub mod curses {
 
 mod pp {
     /* Pretty printer */
-    use crate::app::{Application, Search, View};
+    use crate::state::{State, SearchMode, View};
     use crate::ui::UserInterface;
     use ncurses as nc;
     use std::env;
     use unicode_width::UnicodeWidthStr;
 
-    pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
+    pub fn status_bar(state: &State, user_interface: &UserInterface) -> String {
         let total_pages = user_interface.total_pages();
         format!(
             "- view:{} (C-/) - search:{} (C-e) - case:{} (C-t) - page {}/{} -",
-            view(app.view),
-            search_mode(app.search_mode),
-            case(app.case_sensitivity),
+            view(state.view),
+            search_mode(state.search_mode),
+            case(state.case_sensitivity),
             current_page(user_interface.page, total_pages),
             total_pages,
         )
@@ -428,11 +428,11 @@ mod pp {
         }
     }
 
-    pub fn search_mode(value: Search) -> &'static str {
+    pub fn search_mode(value: SearchMode) -> &'static str {
         match value {
-            Search::Exact => "exact",
-            Search::Regex => "regex",
-            Search::Fuzzy => "fuzzy",
+            SearchMode::Exact => "exact",
+            SearchMode::Regex => "regex",
+            SearchMode::Fuzzy => "fuzzy",
         }
     }
 
@@ -470,7 +470,7 @@ pub enum Direction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::{fixtures::*, Search, View};
+    use crate::state::{fixtures::*, SearchMode, View};
     use rstest::rstest;
 
     #[rstest(
@@ -512,9 +512,9 @@ mod tests {
         ]),
         case(5, vec![])
     )]
-    fn get_page(page: i32, expected: Vec<&str>, fake_app: Application) {
+    fn get_page(page: i32, expected: Vec<&str>, fake_state: State) {
         let mut user_interface = UserInterface::new(String::new());
-        user_interface.app = fake_app;
+        user_interface.state = fake_state;
         user_interface.page = page;
         assert_eq!(user_interface.page_contents(), expected);
     }
@@ -532,9 +532,9 @@ mod tests {
         case(2, 1, Direction::Backward),
         case(1, 4, Direction::Backward)
     )]
-    fn turn_page(current: i32, expected: i32, direction: Direction, fake_app: Application) {
+    fn turn_page(current: i32, expected: i32, direction: Direction, fake_state: State) {
         let mut user_interface = UserInterface::new(String::new());
-        user_interface.app = fake_app;
+        user_interface.state = fake_state;
         user_interface.page = current;
         user_interface.turn_page(direction);
         assert_eq!(user_interface.page, expected)
@@ -557,16 +557,16 @@ mod tests {
     }
 
     #[rstest()]
-    fn page_size(fake_app: Application) {
+    fn page_size(fake_state: State) {
         let mut user_interface = UserInterface::new(String::new());
-        user_interface.app = fake_app;
+        user_interface.state = fake_state;
         assert_eq!(user_interface.page_size(), 7);
     }
 
     #[rstest()]
-    fn total_pages(fake_app: Application) {
+    fn total_pages(fake_state: State) {
         let mut user_interface = UserInterface::new(String::new());
-        user_interface.app = fake_app;
+        user_interface.state = fake_state;
         assert_eq!(user_interface.total_pages(), 4);
     }
 
@@ -589,11 +589,11 @@ mod tests {
     #[rstest(
         value,
         expected,
-        case(Search::Exact, "exact"),
-        case(Search::Regex, "regex"),
-        case(Search::Fuzzy, "fuzzy")
+        case(SearchMode::Exact, "exact"),
+        case(SearchMode::Regex, "regex"),
+        case(SearchMode::Fuzzy, "fuzzy")
     )]
-    fn format_search_mode(value: Search, expected: &str) {
+    fn format_search_mode(value: SearchMode, expected: &str) {
         assert_eq!(super::pp::search_mode(value), expected);
     }
 }

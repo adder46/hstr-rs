@@ -1,10 +1,10 @@
 use io::print_config;
 use structopt::StructOpt;
 
-mod app;
 mod hstr;
 mod io;
 mod sort;
+mod state;
 mod ui;
 
 #[derive(Debug, StructOpt)]
@@ -24,7 +24,7 @@ fn main() -> Result<(), std::io::Error> {
     let query = opt.query.join(" ");
     let mut user_interface = ui::UserInterface::new(query);
     ui::curses::init();
-    user_interface.app.search();
+    user_interface.state.search();
     user_interface.populate_screen();
     user_interface.mainloop()?;
     ui::curses::teardown();
