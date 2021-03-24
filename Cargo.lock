@@ -219,6 +219,7 @@ dependencies = [
  "structopt",
  "strum",
  "strum_macros",
+ "unicode-width",
 ]
 
 [[package]]

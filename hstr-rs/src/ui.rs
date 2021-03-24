@@ -12,6 +12,8 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
+use unicode_width::UnicodeWidthChar as _; // 0.1.8
+
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
@@ -221,19 +223,11 @@ impl UserInterface {
     }
 
     fn paint_matched_chars(&self, command: &str, indices: Vec<usize>, row_idx: usize) {
-        let mut previous_len = 1;
-        let mut skipped = 0;
-        command.char_indices().for_each(|(char_idx, ch)| {
-            if indices.contains(&char_idx) {
+        column_indices(command).for_each(|(col_idx, byte_idx, ch)| {
+            if indices.contains(&byte_idx) {
                 nc::attron(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                nc::mvaddstr(
-                    row_idx as i32 + 3,
-                    char_idx as i32 + 1 - (previous_len - 1) - skipped,
-                    &ch.to_string(),
-                );
+                nc::mvaddstr(row_idx as i32 + 3, col_idx as i32 + 1, &ch.to_string());
                 nc::attroff(nc::COLOR_PAIR(5) | nc::A_BOLD());
-                skipped += previous_len - 1;
-                previous_len = ch.len_utf8() as i32;
             }
         });
     }
@@ -340,6 +334,31 @@ impl UserInterface {
     }
 }
 
+struct ColumnIndices<'a> {
+    inner: std::str::CharIndices<'a>,
+    next_col: usize,
+}
+
+impl Iterator for ColumnIndices<'_> {
+    type Item = (usize, usize, char);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let col_idx = self.next_col;
+        let (byte_idx, ch) = self.inner.next()?;
+
+        self.next_col += ch.width().unwrap_or(0);
+
+        Some((col_idx, byte_idx, ch))
+    }
+}
+
+fn column_indices(s: &str) -> ColumnIndices {
+    ColumnIndices {
+        inner: s.char_indices(),
+        next_col: 0,
+    }
+}
+
 pub mod curses {
     use ncurses as nc;
 
@@ -375,6 +394,7 @@ mod pp {
     use crate::ui::UserInterface;
     use ncurses as nc;
     use std::env;
+    use unicode_width::UnicodeWidthStr;
 
     pub fn status_bar(app: &Application, user_interface: &UserInterface) -> String {
         let total_pages = user_interface.total_pages();
@@ -436,7 +456,8 @@ mod pp {
     }
 
     pub fn ljust(string: &str) -> String {
-        format!("{0:1$}", string, nc::COLS() as usize - 2)
+        let overhead = string.width() - string.chars().count();
+        format!("{0:1$}", string, nc::COLS() as usize - 2 - overhead)
     }
 }
 

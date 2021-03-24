@@ -18,6 +18,7 @@ strum_macros = "0.20.0"
 structopt = "0.3.21"
 setenv = "0.1.2"
 fuzzy-matcher = "0.3.7"
+unicode-width = "0.1.8"
 
 [dev-dependencies]
 rstest = "0.6.4"
