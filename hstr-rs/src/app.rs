@@ -67,10 +67,16 @@ impl Application {
                     .retain(|x| search_regex.is_match(x));
             }
             Search::Fuzzy => {
-                let matcher = SkimMatcherV2::default();
                 let search_string = self.search_string.clone();
-                self.commands_mut(self.view)
-                    .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                if self.case_sensitivity {
+                    let matcher = SkimMatcherV2::default().respect_case();
+                    self.commands_mut(self.view)
+                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                } else {
+                    let matcher = SkimMatcherV2::default();
+                    self.commands_mut(self.view)
+                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                }
             }
         }
     }
