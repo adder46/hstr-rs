@@ -9,4 +9,4 @@ HISTFILESIZE=1000000
 # increase history size
 HISTSIZE=${HISTFILESIZE}
 # bind hstr-rs to CTRL + H
-bindkey -s '^H' 'hstr-rs^M'
+bindkey -s '^H' '\C-ahstr-rs -- \C-j'
