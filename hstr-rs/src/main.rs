@@ -1,5 +1,5 @@
-use crate::ui::Direction;
 use crate::state::View;
+use crate::ui::Direction;
 
 #[cfg(test)]
 use fake_ncurses as nc;

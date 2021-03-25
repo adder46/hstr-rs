@@ -15,8 +15,6 @@ use unicode_width::UnicodeWidthChar as _;
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
-
-
 pub struct UserInterface {
     pub state: Rc<RefCell<State>>,
     pub page: i32,
@@ -78,9 +76,7 @@ impl UserInterface {
                         }
                     }
                     SearchMode::Fuzzy => {
-                        if let Some(matches) =
-                            matcher.fuzzy_indices(cmd, &state.query)
-                        {
+                        if let Some(matches) = matcher.fuzzy_indices(cmd, &state.query) {
                             self.paint_matched_chars(cmd, matches.1, row_idx);
                         }
                     }
@@ -411,7 +407,12 @@ mod tests {
         case(2, 1, Direction::Backward),
         case(1, 4, Direction::Backward)
     )]
-    fn turn_page(current: i32, expected: i32, direction: Direction, fake_state: Rc<RefCell<State>>) {
+    fn turn_page(
+        current: i32,
+        expected: i32,
+        direction: Direction,
+        fake_state: Rc<RefCell<State>>,
+    ) {
         let mut user_interface = UserInterface::new(Rc::clone(&fake_state));
         user_interface.state = fake_state;
         user_interface.page = current;
@@ -427,7 +428,12 @@ mod tests {
         case("make -j4", "[0-9]+", vec![7]),
         case("ping -c 10 www.google.com", "[0-9]+", vec![8, 9])
     )]
-    fn matched_chars_indices(string: &str, substring: &str, expected: Vec<usize>, fake_state: Rc<RefCell<State>>) {
+    fn matched_chars_indices(
+        string: &str,
+        substring: &str,
+        expected: Vec<usize>,
+        fake_state: Rc<RefCell<State>>,
+    ) {
         let user_interface = UserInterface::new(Rc::clone(&fake_state));
         assert_eq!(
             user_interface.substring_indices(string, substring),

@@ -180,10 +180,10 @@ pub enum SearchMode {
 
 #[cfg(test)]
 pub mod fixtures {
-    use std::rc::Rc;
-    use std::cell::RefCell;
     use super::*;
     use rstest::fixture;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[fixture]
     pub fn fake_history() -> Vec<String> {
@@ -235,10 +235,10 @@ pub mod fixtures {
 
 #[cfg(test)]
 mod tests {
-    use std::rc::Rc;
-    use std::cell::RefCell;
     use super::{fixtures::*, *};
     use rstest::rstest;
+    use std::cell::RefCell;
+    use std::rc::Rc;
 
     #[rstest(
         query,
