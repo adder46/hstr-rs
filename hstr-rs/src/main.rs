@@ -38,45 +38,45 @@ fn main() -> Result<(), std::io::Error> {
     }
 
     let query = opt.query.join(" ");
-    let state = state::State::new(query);
-    let mut user_interface = ui::UserInterface::new(state);
+    let mut state = state::State::new(query);
+    let mut user_interface = ui::UserInterface::new();
 
     ui::curses::init();
-    user_interface.state.search();
-    user_interface.populate_screen();
+    state.search();
+    user_interface.populate_screen(&state);
 
     loop {
         let user_input = nc::get_wch();
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_E => {
-                    user_interface.state.toggle_search_mode();
+                    state.toggle_search_mode();
                     user_interface.selected = 0;
-                    user_interface.populate_screen();
+                    user_interface.populate_screen(&state);
                 }
-                CTRL_F => match user_interface.selected() {
+                CTRL_F => match user_interface.selected(&state) {
                     Some(command) => {
-                        if user_interface.state.view == View::Favorites {
-                            user_interface.retain_selected();
+                        if state.view == View::Favorites {
+                            user_interface.retain_selected(&state);
                         }
-                        user_interface.state.add_or_rm_fav(command);
+                        state.add_or_rm_fav(command);
                         io::write_to_home(
-                            &format!(".config/hstr-rs/.{}_favorites", user_interface.state.shell),
-                            user_interface.state.commands(View::Favorites),
+                            &format!(".config/hstr-rs/.{}_favorites", state.shell),
+                            state.commands(View::Favorites),
                         )?;
                         nc::clear();
-                        user_interface.populate_screen();
+                        user_interface.populate_screen(&state);
                     }
                     None => continue,
                 },
-                TAB => match user_interface.selected() {
+                TAB => match user_interface.selected(&state) {
                     Some(command) => {
                         io::echo(command);
                         break;
                     }
                     None => continue,
                 },
-                ENTER => match user_interface.selected() {
+                ENTER => match user_interface.selected(&state) {
                     Some(command) => {
                         io::echo(command + "\n");
                         break;
@@ -84,73 +84,72 @@ fn main() -> Result<(), std::io::Error> {
                     None => continue,
                 },
                 CTRL_T => {
-                    user_interface.state.toggle_case();
-                    user_interface.populate_screen();
+                    state.toggle_case();
+                    user_interface.populate_screen(&state);
                 }
                 ESC => break,
                 CTRL_SLASH => {
-                    user_interface.state.toggle_view();
+                    state.toggle_view();
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
-                    user_interface.populate_screen();
+                    user_interface.populate_screen(&state);
                 }
                 _ => {
-                    user_interface
-                        .state
+                    state
                         .query
                         .push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
-                    user_interface.state.search();
-                    user_interface.populate_screen();
+                    state.search();
+                    user_interface.populate_screen(&state);
                 }
             },
             nc::WchResult::KeyCode(code) => match code {
                 nc::KEY_UP => {
-                    user_interface.move_selected(Direction::Backward);
-                    user_interface.populate_screen();
+                    user_interface.move_selected(&state, Direction::Backward);
+                    user_interface.populate_screen(&state);
                 }
                 nc::KEY_DOWN => {
-                    user_interface.move_selected(Direction::Forward);
-                    user_interface.populate_screen();
+                    user_interface.move_selected(&state, Direction::Forward);
+                    user_interface.populate_screen(&state);
                 }
                 nc::KEY_BACKSPACE => {
-                    user_interface.state.query.pop();
-                    user_interface.state.commands = user_interface.state.to_restore.clone();
+                    state.query.pop();
+                    state.commands = state.to_restore.clone();
                     nc::clear();
-                    user_interface.state.search();
-                    user_interface.populate_screen();
+                    state.search();
+                    user_interface.populate_screen(&state);
                 }
-                nc::KEY_DC => match user_interface.selected() {
+                nc::KEY_DC => match user_interface.selected(&state) {
                     Some(command) => {
                         user_interface.ask_before_deletion(&command);
                         if nc::getch() == Y {
-                            user_interface.retain_selected();
-                            user_interface.state.delete_from_history(command);
+                            user_interface.retain_selected(&state);
+                            state.delete_from_history(command);
                             io::write_to_home(
-                                &format!(".{}_history", user_interface.state.shell),
-                                &user_interface.state.raw_history,
+                                &format!(".{}_history", state.shell),
+                                &state.raw_history,
                             )?;
                         }
-                        user_interface.state.reload_history();
+                        state.reload_history();
                         nc::clear();
-                        user_interface.populate_screen();
+                        user_interface.populate_screen(&state);
                     }
                     None => continue,
                 },
                 nc::KEY_NPAGE => {
-                    user_interface.turn_page(Direction::Forward);
-                    user_interface.populate_screen();
+                    user_interface.turn_page(&state, Direction::Forward);
+                    user_interface.populate_screen(&state);
                 }
                 nc::KEY_PPAGE => {
-                    user_interface.turn_page(Direction::Backward);
-                    user_interface.populate_screen();
+                    user_interface.turn_page(&state, Direction::Backward);
+                    user_interface.populate_screen(&state);
                 }
                 nc::KEY_RESIZE => {
                     nc::clear();
-                    user_interface.populate_screen();
+                    user_interface.populate_screen(&state);
                 }
                 _ => {}
             },
