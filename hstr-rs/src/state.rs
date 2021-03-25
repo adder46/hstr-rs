@@ -12,14 +12,14 @@ pub struct State {
     pub search_mode: SearchMode,
     pub view: View,
     pub shell: String,
-    pub search_string: String,
+    pub query: String,
     pub raw_history: Vec<String>,
     pub commands: Commands,
     pub to_restore: Commands,
 }
 
 impl State {
-    pub fn new(search_string: String) -> Self {
+    pub fn new(query: String) -> Self {
         let shell = setenv::get_shell().get_name();
         let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
@@ -31,7 +31,7 @@ impl State {
             search_mode: SearchMode::Exact,
             view: View::Sorted,
             shell: shell.to_string(),
-            search_string,
+            query,
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
@@ -67,27 +67,27 @@ impl State {
                     .retain(|x| search_regex.is_match(x));
             }
             SearchMode::Fuzzy => {
-                let search_string = self.search_string.clone();
+                let query = self.query.clone();
                 if self.case_sensitivity {
                     let matcher = SkimMatcherV2::default().respect_case();
                     self.commands_mut(self.view)
-                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                        .retain(|x| matcher.fuzzy_match(x, query.as_str()).is_some());
                 } else {
                     let matcher = SkimMatcherV2::default();
                     self.commands_mut(self.view)
-                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                        .retain(|x| matcher.fuzzy_match(x, query.as_str()).is_some());
                 }
             }
         }
     }
 
     fn create_search_regex(&self) -> Option<Regex> {
-        let search_string = match self.search_mode {
-            SearchMode::Regex => self.search_string.clone(),
-            SearchMode::Exact => escape(&self.search_string),
+        let query = match self.search_mode {
+            SearchMode::Regex => self.query.clone(),
+            SearchMode::Exact => escape(&self.query),
             _ => unreachable!(),
         };
-        RegexBuilder::new(&search_string)
+        RegexBuilder::new(&query)
             .case_insensitive(!self.case_sensitivity)
             .build()
             .ok()
@@ -180,6 +180,8 @@ pub enum SearchMode {
 
 #[cfg(test)]
 pub mod fixtures {
+    use std::rc::Rc;
+    use std::cell::RefCell;
     use super::*;
     use rstest::fixture;
 
@@ -219,25 +221,27 @@ pub mod fixtures {
     }
 
     #[fixture]
-    pub fn fake_state(fake_history: Vec<String>) -> State {
-        let mut state = State::new(String::new());
+    pub fn fake_state(fake_history: Vec<String>) -> Rc<RefCell<State>> {
+        let state = Rc::new(RefCell::new(State::new(String::new())));
         let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
             sorted: fake_history,
         };
-        state.commands = fake_commands;
+        state.borrow_mut().commands = fake_commands;
         state
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
+    use std::cell::RefCell;
     use super::{fixtures::*, *};
     use rstest::rstest;
 
     #[rstest(
-        search_string,
+        query,
         expected,
         search_mode,
         case_sensitivity,
@@ -249,17 +253,18 @@ mod tests {
         case("hwk", vec!["nano .github/workflows/build.yml", "cd /home/bwk/"], SearchMode::Fuzzy, false)
     )]
     fn search(
-        search_string: &str,
+        query: &str,
         expected: Vec<&str>,
         search_mode: SearchMode,
         case_sensitivity: bool,
-        mut fake_state: State,
+        fake_state: Rc<RefCell<State>>,
     ) {
-        fake_state.search_mode = search_mode;
-        fake_state.case_sensitivity = case_sensitivity;
-        fake_state.search_string = String::from(search_string);
-        fake_state.search();
-        assert_eq!(fake_state.commands(fake_state.view), expected);
+        let mut state = fake_state.borrow_mut();
+        state.search_mode = search_mode;
+        state.case_sensitivity = case_sensitivity;
+        state.query = String::from(query);
+        state.search();
+        assert_eq!(state.commands(state.view), expected);
     }
 
     #[rstest(
@@ -269,14 +274,15 @@ mod tests {
         case(View::Favorites, Vec::new()),
         case(View::All, fake_history())
     )]
-    fn get_commands(view: View, expected: Vec<String>, mut fake_state: State) {
-        fake_state.view = view;
-        let commands = fake_state.commands(fake_state.view);
+    fn get_commands(view: View, expected: Vec<String>, fake_state: Rc<RefCell<State>>) {
+        let mut state = fake_state.borrow_mut();
+        state.view = view;
+        let commands = state.commands(state.view);
         assert_eq!(commands, expected);
     }
 
     #[rstest(
-        search_string,
+        query,
         search_mode,
         case_sensitivity,
         expected,
@@ -286,16 +292,17 @@ mod tests {
         case(String::from("print("), SearchMode::Regex, true, "")
     )]
     fn create_search_regex(
-        search_string: String,
+        query: String,
         search_mode: SearchMode,
         case_sensitivity: bool,
         expected: &str,
-        mut fake_state: State,
+        fake_state: Rc<RefCell<State>>,
     ) {
-        fake_state.search_string = search_string;
-        fake_state.search_mode = search_mode;
-        fake_state.case_sensitivity = case_sensitivity;
-        let regex = fake_state.create_search_regex();
+        let mut state = fake_state.borrow_mut();
+        state.query = query;
+        state.search_mode = search_mode;
+        state.case_sensitivity = case_sensitivity;
+        let regex = state.create_search_regex();
         assert_eq!(regex.unwrap_or(Regex::new("").unwrap()).as_str(), expected);
     }
 
@@ -305,11 +312,12 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn add_or_rm_fav(command: String, mut fake_state: State) {
-        fake_state.add_or_rm_fav(command.clone());
-        assert!(fake_state.commands(View::Favorites).contains(&command));
-        fake_state.add_or_rm_fav(command.clone());
-        assert!(!fake_state.commands(View::Favorites).contains(&command));
+    fn add_or_rm_fav(command: String, fake_state: Rc<RefCell<State>>) {
+        let mut state = fake_state.borrow_mut();
+        state.add_or_rm_fav(command.clone());
+        assert!(state.commands(View::Favorites).contains(&command));
+        state.add_or_rm_fav(command.clone());
+        assert!(!state.commands(View::Favorites).contains(&command));
     }
 
     #[rstest(
@@ -318,9 +326,10 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn delete_from_history(command: String, mut fake_state: State) {
-        fake_state.delete_from_history(command.clone());
-        assert!(!fake_state.commands(fake_state.view).contains(&command));
+    fn delete_from_history(command: String, fake_state: Rc<RefCell<State>>) {
+        let mut state = fake_state.borrow_mut();
+        state.delete_from_history(command.clone());
+        assert!(!state.commands(state.view).contains(&command));
     }
 
     #[rstest(
