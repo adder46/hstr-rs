@@ -31,7 +31,9 @@ impl UserInterface {
     }
 
     pub fn selected(&self, state: &State) -> Option<String> {
-        self.page_contents(state).get(self.selected as usize).cloned()
+        self.page_contents(state)
+            .get(self.selected as usize)
+            .cloned()
     }
 
     fn page_contents(&self, state: &State) -> Vec<String> {
@@ -414,11 +416,7 @@ mod tests {
         case("make -j4", "[0-9]+", vec![7]),
         case("ping -c 10 www.google.com", "[0-9]+", vec![8, 9])
     )]
-    fn matched_chars_indices(
-        string: &str,
-        substring: &str,
-        expected: Vec<usize>,
-    ) {
+    fn matched_chars_indices(string: &str, substring: &str, expected: Vec<usize>) {
         let user_interface = UserInterface::new();
         assert_eq!(
             user_interface.substring_indices(string, substring),

@@ -96,9 +96,7 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 _ => {
-                    state
-                        .query
-                        .push(std::char::from_u32(ch).unwrap());
+                    state.query.push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
