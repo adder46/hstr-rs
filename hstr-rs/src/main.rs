@@ -30,7 +30,6 @@ struct Opt {
     show_config: Option<String>,
 }
 
-#[allow(unreachable_code)]
 fn main() -> Result<(), std::io::Error> {
     let opt = Opt::from_args();
     if let Some(shell) = opt.show_config {
