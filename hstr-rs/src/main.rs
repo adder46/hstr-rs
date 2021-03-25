@@ -6,8 +6,6 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
-use std::cell::RefCell;
-use std::rc::Rc;
 use structopt::StructOpt;
 
 mod hstr;
@@ -41,11 +39,11 @@ fn main() -> Result<(), std::io::Error> {
     }
 
     let query = opt.query.join(" ");
-    let state = Rc::new(RefCell::new(state::State::new(query)));
-    let mut user_interface = ui::UserInterface::new(Rc::clone(&state));
+    let state = state::State::new(query);
+    let mut user_interface = ui::UserInterface::new(state);
 
     ui::curses::init();
-    state.borrow_mut().search();
+    user_interface.state.search();
     user_interface.populate_screen();
 
     loop {
@@ -53,19 +51,19 @@ fn main() -> Result<(), std::io::Error> {
         match user_input.unwrap() {
             nc::WchResult::Char(ch) => match ch {
                 CTRL_E => {
-                    state.borrow_mut().toggle_search_mode();
+                    user_interface.state.toggle_search_mode();
                     user_interface.selected = 0;
                     user_interface.populate_screen();
                 }
                 CTRL_F => match user_interface.selected() {
                     Some(command) => {
-                        if state.borrow().view == View::Favorites {
+                        if user_interface.state.view == View::Favorites {
                             user_interface.retain_selected();
                         }
-                        state.borrow_mut().add_or_rm_fav(command);
+                        user_interface.state.add_or_rm_fav(command);
                         io::write_to_home(
-                            &format!(".config/hstr-rs/.{}_favorites", state.borrow().shell),
-                            state.borrow().commands(View::Favorites),
+                            &format!(".config/hstr-rs/.{}_favorites", user_interface.state.shell),
+                            user_interface.state.commands(View::Favorites),
                         )?;
                         nc::clear();
                         user_interface.populate_screen();
@@ -87,26 +85,26 @@ fn main() -> Result<(), std::io::Error> {
                     None => continue,
                 },
                 CTRL_T => {
-                    state.borrow_mut().toggle_case();
+                    user_interface.state.toggle_case();
                     user_interface.populate_screen();
                 }
                 ESC => break,
                 CTRL_SLASH => {
-                    state.borrow_mut().toggle_view();
+                    user_interface.state.toggle_view();
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
                     user_interface.populate_screen();
                 }
                 _ => {
-                    state
-                        .borrow_mut()
+                    user_interface
+                        .state
                         .query
                         .push(std::char::from_u32(ch).unwrap());
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
-                    state.borrow_mut().search();
+                    user_interface.state.search();
                     user_interface.populate_screen();
                 }
             },
@@ -120,12 +118,10 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen();
                 }
                 nc::KEY_BACKSPACE => {
-                    let mut st = state.borrow_mut();
-                    st.query.pop();
-                    st.commands = st.to_restore.clone();
+                    user_interface.state.query.pop();
+                    user_interface.state.commands = user_interface.state.to_restore.clone();
                     nc::clear();
-                    st.search();
-                    drop(st);
+                    user_interface.state.search();
                     user_interface.populate_screen();
                 }
                 nc::KEY_DC => match user_interface.selected() {
@@ -133,13 +129,13 @@ fn main() -> Result<(), std::io::Error> {
                         user_interface.ask_before_deletion(&command);
                         if nc::getch() == Y {
                             user_interface.retain_selected();
-                            state.borrow_mut().delete_from_history(command);
+                            user_interface.state.delete_from_history(command);
                             io::write_to_home(
-                                &format!(".{}_history", state.borrow().shell),
-                                &state.borrow().raw_history,
+                                &format!(".{}_history", user_interface.state.shell),
+                                &user_interface.state.raw_history,
                             )?;
                         }
-                        state.borrow_mut().reload_history();
+                        user_interface.state.reload_history();
                         nc::clear();
                         user_interface.populate_screen();
                     }

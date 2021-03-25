@@ -2,8 +2,6 @@ use crate::state::{SearchMode, State};
 use fuzzy_matcher::{skim::SkimMatcherV2, FuzzyMatcher};
 use pp::*;
 use regex::Regex;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 #[cfg(test)]
 use fake_ncurses as nc;
@@ -16,13 +14,13 @@ const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
 
 pub struct UserInterface {
-    pub state: Rc<RefCell<State>>,
+    pub state: State,
     pub page: i32,
     pub selected: i32,
 }
 
 impl UserInterface {
-    pub fn new(state: Rc<RefCell<State>>) -> Self {
+    pub fn new(state: State) -> Self {
         Self {
             state,
             page: 1,
@@ -39,9 +37,8 @@ impl UserInterface {
     }
 
     fn page_contents(&self) -> Vec<String> {
-        let state = self.state.borrow();
-        let current_view = state.view;
-        let commands = state.commands(current_view);
+        let current_view = self.state.view;
+        let commands = self.state.commands(current_view);
         match commands
             .chunks(nc::LINES() as usize - 3)
             .nth(self.page as usize - 1)
@@ -62,26 +59,25 @@ impl UserInterface {
                  * Paint favorite, if any; then
                  * Finally, paint selection
                  */
-                let state = self.state.borrow();
                 let cmd = &cmd
                     .chars()
                     .take(nc::COLS() as usize - 2)
                     .collect::<String>();
                 nc::mvaddstr(row_idx as i32 + 3, 1, &ljust(cmd));
-                match state.search_mode {
+                match self.state.search_mode {
                     SearchMode::Exact | SearchMode::Regex => {
-                        let matches = self.substring_indices(cmd, &state.query);
+                        let matches = self.substring_indices(cmd, &self.state.query);
                         if !matches.is_empty() {
                             self.paint_matched_chars(cmd, matches, row_idx);
                         }
                     }
                     SearchMode::Fuzzy => {
-                        if let Some(matches) = matcher.fuzzy_indices(cmd, &state.query) {
+                        if let Some(matches) = matcher.fuzzy_indices(cmd, &self.state.query) {
                             self.paint_matched_chars(cmd, matches.1, row_idx);
                         }
                     }
                 }
-                if state.cmd_in_fav(cmd) {
+                if self.state.cmd_in_fav(cmd) {
                     self.paint_favorite(cmd.clone(), row_idx);
                 }
                 self.paint_selected(cmd, row_idx);
@@ -123,9 +119,9 @@ impl UserInterface {
     fn paint_bars(&self) {
         nc::mvaddstr(1, 1, LABEL);
         nc::attron(nc::COLOR_PAIR(3));
-        nc::mvaddstr(2, 1, &ljust(&status_bar(&self.state.borrow(), self)));
+        nc::mvaddstr(2, 1, &ljust(&status_bar(&self.state, self)));
         nc::attroff(nc::COLOR_PAIR(3));
-        nc::mvaddstr(0, 1, &top_bar(&self.state.borrow().query));
+        nc::mvaddstr(0, 1, &top_bar(&self.state.query));
     }
 
     pub fn turn_page(&mut self, direction: Direction) {
@@ -167,9 +163,8 @@ impl UserInterface {
     }
 
     pub fn total_pages(&self) -> i32 {
-        let state = self.state.borrow();
-        let current_view = state.view;
-        let commands = state.commands(current_view);
+        let current_view = self.state.view;
+        let commands = self.state.commands(current_view);
         commands.chunks(nc::LINES() as usize - 3).len() as i32
     }
 
@@ -387,9 +382,8 @@ mod tests {
         ]),
         case(5, vec![])
     )]
-    fn get_page(page: i32, expected: Vec<&str>, fake_state: Rc<RefCell<State>>) {
-        let mut user_interface = UserInterface::new(Rc::clone(&fake_state));
-        user_interface.state = fake_state;
+    fn get_page(page: i32, expected: Vec<&str>, fake_state: State) {
+        let mut user_interface = UserInterface::new(fake_state);
         user_interface.page = page;
         assert_eq!(user_interface.page_contents(), expected);
     }
@@ -407,14 +401,8 @@ mod tests {
         case(2, 1, Direction::Backward),
         case(1, 4, Direction::Backward)
     )]
-    fn turn_page(
-        current: i32,
-        expected: i32,
-        direction: Direction,
-        fake_state: Rc<RefCell<State>>,
-    ) {
-        let mut user_interface = UserInterface::new(Rc::clone(&fake_state));
-        user_interface.state = fake_state;
+    fn turn_page(current: i32, expected: i32, direction: Direction, fake_state: State) {
+        let mut user_interface = UserInterface::new(fake_state);
         user_interface.page = current;
         user_interface.turn_page(direction);
         assert_eq!(user_interface.page, expected)
@@ -432,9 +420,9 @@ mod tests {
         string: &str,
         substring: &str,
         expected: Vec<usize>,
-        fake_state: Rc<RefCell<State>>,
+        fake_state: State,
     ) {
-        let user_interface = UserInterface::new(Rc::clone(&fake_state));
+        let user_interface = UserInterface::new(fake_state);
         assert_eq!(
             user_interface.substring_indices(string, substring),
             expected
@@ -442,16 +430,14 @@ mod tests {
     }
 
     #[rstest()]
-    fn page_size(fake_state: Rc<RefCell<State>>) {
-        let mut user_interface = UserInterface::new(Rc::clone(&fake_state));
-        user_interface.state = fake_state;
+    fn page_size(fake_state: State) {
+        let user_interface = UserInterface::new(fake_state);
         assert_eq!(user_interface.page_size(), 7);
     }
 
     #[rstest()]
-    fn total_pages(fake_state: Rc<RefCell<State>>) {
-        let mut user_interface = UserInterface::new(Rc::clone(&fake_state));
-        user_interface.state = fake_state;
+    fn total_pages(fake_state: State) {
+        let user_interface = UserInterface::new(fake_state);
         assert_eq!(user_interface.total_pages(), 4);
     }
 

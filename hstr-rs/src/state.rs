@@ -182,8 +182,6 @@ pub enum SearchMode {
 pub mod fixtures {
     use super::*;
     use rstest::fixture;
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[fixture]
     pub fn fake_history() -> Vec<String> {
@@ -221,14 +219,14 @@ pub mod fixtures {
     }
 
     #[fixture]
-    pub fn fake_state(fake_history: Vec<String>) -> Rc<RefCell<State>> {
-        let state = Rc::new(RefCell::new(State::new(String::new())));
+    pub fn fake_state(fake_history: Vec<String>) -> State {
+        let mut state = State::new(String::new());
         let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
             sorted: fake_history,
         };
-        state.borrow_mut().commands = fake_commands;
+        state.commands = fake_commands;
         state
     }
 }
@@ -237,8 +235,6 @@ pub mod fixtures {
 mod tests {
     use super::{fixtures::*, *};
     use rstest::rstest;
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     #[rstest(
         query,
@@ -257,14 +253,13 @@ mod tests {
         expected: Vec<&str>,
         search_mode: SearchMode,
         case_sensitivity: bool,
-        fake_state: Rc<RefCell<State>>,
+        mut fake_state: State,
     ) {
-        let mut state = fake_state.borrow_mut();
-        state.search_mode = search_mode;
-        state.case_sensitivity = case_sensitivity;
-        state.query = String::from(query);
-        state.search();
-        assert_eq!(state.commands(state.view), expected);
+        fake_state.search_mode = search_mode;
+        fake_state.case_sensitivity = case_sensitivity;
+        fake_state.query = String::from(query);
+        fake_state.search();
+        assert_eq!(fake_state.commands(fake_state.view), expected);
     }
 
     #[rstest(
@@ -274,10 +269,9 @@ mod tests {
         case(View::Favorites, Vec::new()),
         case(View::All, fake_history())
     )]
-    fn get_commands(view: View, expected: Vec<String>, fake_state: Rc<RefCell<State>>) {
-        let mut state = fake_state.borrow_mut();
-        state.view = view;
-        let commands = state.commands(state.view);
+    fn get_commands(view: View, expected: Vec<String>, mut fake_state: State) {
+        fake_state.view = view;
+        let commands = fake_state.commands(fake_state.view);
         assert_eq!(commands, expected);
     }
 
@@ -296,9 +290,9 @@ mod tests {
         search_mode: SearchMode,
         case_sensitivity: bool,
         expected: &str,
-        fake_state: Rc<RefCell<State>>,
+        fake_state: State,
     ) {
-        let mut state = fake_state.borrow_mut();
+        let mut state = fake_state;
         state.query = query;
         state.search_mode = search_mode;
         state.case_sensitivity = case_sensitivity;
@@ -312,12 +306,11 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn add_or_rm_fav(command: String, fake_state: Rc<RefCell<State>>) {
-        let mut state = fake_state.borrow_mut();
-        state.add_or_rm_fav(command.clone());
-        assert!(state.commands(View::Favorites).contains(&command));
-        state.add_or_rm_fav(command.clone());
-        assert!(!state.commands(View::Favorites).contains(&command));
+    fn add_or_rm_fav(command: String, mut fake_state: State) {
+        fake_state.add_or_rm_fav(command.clone());
+        assert!(fake_state.commands(View::Favorites).contains(&command));
+        fake_state.add_or_rm_fav(command.clone());
+        assert!(!fake_state.commands(View::Favorites).contains(&command));
     }
 
     #[rstest(
@@ -326,10 +319,9 @@ mod tests {
         case(String::from("grep -r spam .")),
         case(String::from("ping -c 10 www.google.com"))
     )]
-    fn delete_from_history(command: String, fake_state: Rc<RefCell<State>>) {
-        let mut state = fake_state.borrow_mut();
-        state.delete_from_history(command.clone());
-        assert!(!state.commands(state.view).contains(&command));
+    fn delete_from_history(command: String, mut fake_state: State) {
+        fake_state.delete_from_history(command.clone());
+        assert!(!fake_state.commands(fake_state.view).contains(&command));
     }
 
     #[rstest(
