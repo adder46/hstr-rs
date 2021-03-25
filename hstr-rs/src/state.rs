@@ -12,14 +12,14 @@ pub struct State {
     pub search_mode: SearchMode,
     pub view: View,
     pub shell: String,
-    pub search_string: String,
+    pub query: String,
     pub raw_history: Vec<String>,
     pub commands: Commands,
     pub to_restore: Commands,
 }
 
 impl State {
-    pub fn new(search_string: String) -> Self {
+    pub fn new(query: String) -> Self {
         let shell = setenv::get_shell().get_name();
         let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
@@ -31,7 +31,7 @@ impl State {
             search_mode: SearchMode::Exact,
             view: View::Sorted,
             shell: shell.to_string(),
-            search_string,
+            query,
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
@@ -67,27 +67,27 @@ impl State {
                     .retain(|x| search_regex.is_match(x));
             }
             SearchMode::Fuzzy => {
-                let search_string = self.search_string.clone();
+                let query = self.query.clone();
                 if self.case_sensitivity {
                     let matcher = SkimMatcherV2::default().respect_case();
                     self.commands_mut(self.view)
-                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                        .retain(|x| matcher.fuzzy_match(x, query.as_str()).is_some());
                 } else {
                     let matcher = SkimMatcherV2::default();
                     self.commands_mut(self.view)
-                        .retain(|x| matcher.fuzzy_match(x, search_string.as_str()).is_some());
+                        .retain(|x| matcher.fuzzy_match(x, query.as_str()).is_some());
                 }
             }
         }
     }
 
     fn create_search_regex(&self) -> Option<Regex> {
-        let search_string = match self.search_mode {
-            SearchMode::Regex => self.search_string.clone(),
-            SearchMode::Exact => escape(&self.search_string),
+        let query = match self.search_mode {
+            SearchMode::Regex => self.query.clone(),
+            SearchMode::Exact => escape(&self.query),
             _ => unreachable!(),
         };
-        RegexBuilder::new(&search_string)
+        RegexBuilder::new(&query)
             .case_insensitive(!self.case_sensitivity)
             .build()
             .ok()
@@ -237,7 +237,7 @@ mod tests {
     use rstest::rstest;
 
     #[rstest(
-        search_string,
+        query,
         expected,
         search_mode,
         case_sensitivity,
@@ -249,7 +249,7 @@ mod tests {
         case("hwk", vec!["nano .github/workflows/build.yml", "cd /home/bwk/"], SearchMode::Fuzzy, false)
     )]
     fn search(
-        search_string: &str,
+        query: &str,
         expected: Vec<&str>,
         search_mode: SearchMode,
         case_sensitivity: bool,
@@ -257,7 +257,7 @@ mod tests {
     ) {
         fake_state.search_mode = search_mode;
         fake_state.case_sensitivity = case_sensitivity;
-        fake_state.search_string = String::from(search_string);
+        fake_state.query = String::from(query);
         fake_state.search();
         assert_eq!(fake_state.commands(fake_state.view), expected);
     }
@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[rstest(
-        search_string,
+        query,
         search_mode,
         case_sensitivity,
         expected,
@@ -286,16 +286,17 @@ mod tests {
         case(String::from("print("), SearchMode::Regex, true, "")
     )]
     fn create_search_regex(
-        search_string: String,
+        query: String,
         search_mode: SearchMode,
         case_sensitivity: bool,
         expected: &str,
-        mut fake_state: State,
+        fake_state: State,
     ) {
-        fake_state.search_string = search_string;
-        fake_state.search_mode = search_mode;
-        fake_state.case_sensitivity = case_sensitivity;
-        let regex = fake_state.create_search_regex();
+        let mut state = fake_state;
+        state.query = query;
+        state.search_mode = search_mode;
+        state.case_sensitivity = case_sensitivity;
+        let regex = state.create_search_regex();
         assert_eq!(regex.unwrap_or(Regex::new("").unwrap()).as_str(), expected);
     }
 
