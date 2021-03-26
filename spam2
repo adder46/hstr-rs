@@ -1,0 +1,12 @@
+   Compiling hstr-rs v0.10.0 (/home/alex/Repositories/hstr-rs/hstr-rs)
+    Finished dev [unoptimized + debuginfo] target(s) in 1.36s
+     Running `target/debug/hstr-rs`
+[hstr-rs/src/main.rs:100] &state.query = "s"
+[hstr-rs/src/main.rs:100] &state.query = "sp"
+[hstr-rs/src/main.rs:100] &state.query = "spa"
+[hstr-rs/src/main.rs:100] &state.query = "spam"
+[hstr-rs/src/main.rs:100] &state.query = "s"
+[hstr-rs/src/main.rs:100] &state.query = "sp"
+[hstr-rs/src/main.rs:100] &state.query = "spa"
+[hstr-rs/src/main.rs:100] &state.query = "spam"
+[hstr-rs/src/main.rs:100] &state.query = "spam"

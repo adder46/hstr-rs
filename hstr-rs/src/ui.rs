@@ -215,7 +215,7 @@ impl UserInterface {
                 );
             }
             Direction::Forward => {
-                if state.cursor + 1 < state.query.chars().count() {
+                if state.cursor < state.query.chars().count() {
                     state.cursor += 1;
                     nc::wmove(
                         nc::stdscr(),
