@@ -102,9 +102,22 @@ fn main() -> Result<(), std::io::Error> {
                     nc::clear();
                     state.search();
                     user_interface.populate_screen(&state);
+                    user_interface.move_cursor(&mut state, Direction::Forward);
                 }
             },
             nc::WchResult::KeyCode(code) => match code {
+                nc::KEY_LEFT => {
+                    if let Some(ch) = state.query.pop() {
+                        state.query_stack.push_front(ch);
+                    }
+                    user_interface.move_cursor(&mut state, Direction::Backward);
+                }
+                nc::KEY_RIGHT => {
+                    if let Some(ch) = state.query_stack.pop_front() {
+                        state.query.push(ch);
+                    }
+                    user_interface.move_cursor(&mut state, Direction::Forward);
+                }
                 nc::KEY_UP => {
                     user_interface.move_selected(&state, Direction::Backward);
                     user_interface.populate_screen(&state);
@@ -115,10 +128,15 @@ fn main() -> Result<(), std::io::Error> {
                 }
                 nc::KEY_BACKSPACE => {
                     state.query.pop();
+                    let q = state.query_stack.clone().into_iter().collect::<String>();
+                    if !q.is_empty() {
+                        state.query.push_str(&q); 
+                    }
                     state.commands = state.to_restore.clone();
                     nc::clear();
                     state.search();
                     user_interface.populate_screen(&state);
+                    user_interface.move_cursor(&mut state, Direction::Backward);
                 }
                 nc::KEY_DC => match user_interface.selected(&state) {
                     Some(command) => {

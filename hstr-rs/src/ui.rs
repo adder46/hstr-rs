@@ -202,6 +202,22 @@ impl UserInterface {
         nc::mvaddstr(1, 1, &deletion_prompt(command));
         nc::attroff(nc::COLOR_PAIR(6));
     }
+
+    pub fn move_cursor(&self, state: &mut State, direction: Direction) {
+        let prompt_length = pp::get_shell_prompt().chars().count();
+        match direction {
+            Direction::Backward => {
+                state.cursor = state.cursor.saturating_sub(1);
+                nc::wmove(nc::stdscr(), 0, prompt_length as i32 + 2 + state.cursor as i32);    
+            }
+            Direction::Forward => {
+                if !(state.cursor + 1 > state.query.chars().count()) {
+                    state.cursor += 1;
+                    nc::wmove(nc::stdscr(), 0, prompt_length as i32 + 2 + state.cursor as i32);
+                }
+            }
+        }
+    }
 }
 
 struct ColumnIndices<'a> {
@@ -282,7 +298,7 @@ mod pp {
         format!("{} {}", get_shell_prompt(), query)
     }
 
-    fn get_shell_prompt() -> String {
+    pub fn get_shell_prompt() -> String {
         format!(
             "{}@{}$",
             env::var("USER").unwrap(),
