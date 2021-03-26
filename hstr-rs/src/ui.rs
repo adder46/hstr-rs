@@ -220,7 +220,7 @@ impl UserInterface {
     }
 }
 
-struct ColumnIndices<'a> {
+pub struct ColumnIndices<'a> {
     inner: std::str::CharIndices<'a>,
     next_col: usize,
 }
@@ -238,7 +238,7 @@ impl Iterator for ColumnIndices<'_> {
     }
 }
 
-fn column_indices(s: &str) -> ColumnIndices {
+pub fn column_indices(s: &str) -> ColumnIndices {
     ColumnIndices {
         inner: s.char_indices(),
         next_col: 0,

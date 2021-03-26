@@ -96,7 +96,8 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 _ => {
-                    state.query.push(std::char::from_u32(ch).unwrap());
+                    state.query.insert(state.cursor,std::char::from_u32(ch).unwrap());
+                    state.commands = state.to_restore.clone();
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
@@ -107,15 +108,9 @@ fn main() -> Result<(), std::io::Error> {
             },
             nc::WchResult::KeyCode(code) => match code {
                 nc::KEY_LEFT => {
-                    if let Some(ch) = state.query.pop() {
-                        state.query_stack.push_front(ch);
-                    }
                     user_interface.move_cursor(&mut state, Direction::Backward);
                 }
                 nc::KEY_RIGHT => {
-                    if let Some(ch) = state.query_stack.pop_front() {
-                        state.query.push(ch);
-                    }
                     user_interface.move_cursor(&mut state, Direction::Forward);
                 }
                 nc::KEY_UP => {
@@ -127,11 +122,11 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 nc::KEY_BACKSPACE => {
-                    state.query.pop();
-                    let q = state.query_stack.clone().into_iter().collect::<String>();
-                    if !q.is_empty() {
-                        state.query.push_str(&q); 
-                    }
+                    ui::column_indices(&state.query.clone()).for_each(|(colidx, byteidx, _ch)| {
+                        if state.cursor.saturating_sub(1) == colidx {
+                            state.query.remove(byteidx);
+                        }
+                    });
                     state.commands = state.to_restore.clone();
                     nc::clear();
                     state.search();

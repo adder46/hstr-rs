@@ -19,7 +19,6 @@ pub struct State {
     pub commands: Commands,
     pub to_restore: Commands,
     pub cursor: usize,
-    pub query_stack: VecDeque<char>,
 }
 
 impl State {
@@ -40,7 +39,6 @@ impl State {
             commands: commands.clone(),
             to_restore: commands,
             cursor: 0,
-            query_stack: VecDeque::new(),
         }
     }
 
