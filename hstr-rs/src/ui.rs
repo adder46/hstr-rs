@@ -208,12 +208,20 @@ impl UserInterface {
         match direction {
             Direction::Backward => {
                 state.cursor = state.cursor.saturating_sub(1);
-                nc::wmove(nc::stdscr(), 0, prompt_length as i32 + 2 + state.cursor as i32);    
+                nc::wmove(
+                    nc::stdscr(),
+                    0,
+                    prompt_length as i32 + 2 + state.cursor as i32,
+                );
             }
             Direction::Forward => {
-                if !(state.cursor + 1 > state.query.chars().count()) {
+                if state.cursor + 1 < state.query.chars().count() {
                     state.cursor += 1;
-                    nc::wmove(nc::stdscr(), 0, prompt_length as i32 + 2 + state.cursor as i32);
+                    nc::wmove(
+                        nc::stdscr(),
+                        0,
+                        prompt_length as i32 + 2 + state.cursor as i32,
+                    );
                 }
             }
         }

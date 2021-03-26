@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::{hstr, io, sort};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;

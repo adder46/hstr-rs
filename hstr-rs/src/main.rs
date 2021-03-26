@@ -96,7 +96,9 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 _ => {
-                    state.query.insert(state.cursor,std::char::from_u32(ch).unwrap());
+                    state
+                        .query
+                        .insert(state.cursor, std::char::from_u32(ch).unwrap());
                     state.commands = state.to_restore.clone();
                     user_interface.selected = 0;
                     user_interface.page = 1;
