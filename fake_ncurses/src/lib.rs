@@ -97,6 +97,10 @@ pub fn get_wch() -> Option<WchResult> {
     Some(WchResult::Char(0))
 }
 
+pub fn wmove(_w: WINDOW, _y: i32, _x: i32) -> i32 {
+    0
+}
+
 #[allow(non_camel_case_types)]
 pub enum LcCategory {
     all,
@@ -107,6 +111,8 @@ pub enum WchResult {
     KeyCode(i32),
 }
 
+pub const KEY_LEFT: i32 = 0x104;
+pub const KEY_RIGHT: i32 = 0x105;
 pub const KEY_DOWN: i32 = 0x102;
 pub const KEY_UP: i32 = 0x103;
 pub const KEY_BACKSPACE: i32 = 0x107;
