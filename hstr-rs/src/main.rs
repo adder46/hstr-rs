@@ -96,9 +96,10 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 _ => {
+                    let query_length_in_bytes = state.query.chars().take(state.cursor).fold(0, |acc, x| acc + x.to_string().len());                 
                     state
                         .query
-                        .insert(state.cursor, std::char::from_u32(ch).unwrap());
+                        .insert(state.cursor + (query_length_in_bytes - state.cursor), std::char::from_u32(ch).unwrap());
                     state.commands = state.to_restore.clone();
                     user_interface.selected = 0;
                     user_interface.page = 1;
