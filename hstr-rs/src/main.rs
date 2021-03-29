@@ -44,6 +44,12 @@ fn main() -> Result<(), std::io::Error> {
 
     ui::curses::init();
     state.search();
+    state.query_char_widths = state
+        .query
+        .chars()
+        .map(|ch| ch.width().unwrap_or(0))
+        .collect::<Vec<usize>>();
+    state.query.clone().chars().for_each(|_| user_interface.move_cursor(&mut state, Direction::Forward));
     user_interface.populate_screen(&state);
 
     loop {
