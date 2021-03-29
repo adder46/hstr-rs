@@ -102,10 +102,9 @@ fn main() -> Result<(), std::io::Error> {
                         .chars()
                         .take(state.real_moves)
                         .fold(0, |acc, x| acc + x.to_string().len());
-                    state.query.insert(
-                        query_length_in_bytes,
-                        std::char::from_u32(ch).unwrap(),
-                    );
+                    state
+                        .query
+                        .insert(query_length_in_bytes, std::char::from_u32(ch).unwrap());
                     state.commands = state.to_restore.clone();
                     state.query_char_widths = state
                         .query
