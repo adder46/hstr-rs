@@ -49,7 +49,11 @@ fn main() -> Result<(), std::io::Error> {
         .chars()
         .map(|ch| ch.width().unwrap_or(0))
         .collect::<Vec<usize>>();
-    state.query.clone().chars().for_each(|_| user_interface.move_cursor(&mut state, Direction::Forward));
+    state
+        .query
+        .clone()
+        .chars()
+        .for_each(|_| user_interface.move_cursor(&mut state, Direction::Forward));
     user_interface.populate_screen(&state);
 
     loop {
