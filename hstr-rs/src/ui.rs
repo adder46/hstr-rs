@@ -212,8 +212,7 @@ impl UserInterface {
                 state.cursor = state.cursor.saturating_sub(
                     *char_widths
                         .get(state.real_moves.saturating_sub(1))
-                        .unwrap_or(&0)
-                        
+                        .unwrap_or(&0),
                 );
                 nc::wmove(
                     nc::stdscr(),
@@ -224,9 +223,7 @@ impl UserInterface {
             Direction::Forward => {
                 if state.cursor < state.query.width() {
                     state.real_moves += 1;
-                    state.cursor += char_widths
-                        .get(state.real_moves.saturating_sub(1))
-                        .unwrap();
+                    state.cursor += char_widths.get(state.real_moves.saturating_sub(1)).unwrap();
                     nc::wmove(
                         nc::stdscr(),
                         0,
