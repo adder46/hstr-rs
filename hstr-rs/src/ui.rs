@@ -8,7 +8,7 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
-use unicode_width::UnicodeWidthChar as _;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
@@ -205,9 +205,16 @@ impl UserInterface {
 
     pub fn move_cursor(&self, state: &mut State, direction: Direction) {
         let prompt_length = pp::get_shell_prompt().chars().count();
+        let char_widths = &state.query_char_widths;
         match direction {
             Direction::Backward => {
-                state.cursor = state.cursor.saturating_sub(1);
+                state.real_moves = state.real_moves.saturating_sub(1);
+                state.cursor = state.cursor.saturating_sub(
+                    *char_widths
+                        .get(state.real_moves.saturating_sub(1))
+                        .unwrap_or(&0)
+                        
+                );
                 nc::wmove(
                     nc::stdscr(),
                     0,
@@ -215,8 +222,11 @@ impl UserInterface {
                 );
             }
             Direction::Forward => {
-                if state.cursor < state.query.chars().count() {
-                    state.cursor += 1;
+                if state.cursor < state.query.width() {
+                    state.real_moves += 1;
+                    state.cursor += char_widths
+                        .get(state.real_moves.saturating_sub(1))
+                        .unwrap();
                     nc::wmove(
                         nc::stdscr(),
                         0,

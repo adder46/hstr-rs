@@ -17,6 +17,8 @@ pub struct State {
     pub commands: Commands,
     pub to_restore: Commands,
     pub cursor: usize,
+    pub query_char_widths: Vec<usize>,
+    pub real_moves: usize,
 }
 
 impl State {
@@ -33,10 +35,12 @@ impl State {
             view: View::Sorted,
             shell: shell.to_string(),
             query,
+            query_char_widths: vec![],
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
             cursor: 0,
+            real_moves: 0,
         }
     }
 
