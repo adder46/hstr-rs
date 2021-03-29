@@ -39,7 +39,7 @@ pub fn write_to_home(path: impl AsRef<Path>, thing: &[String]) -> Result<(), Err
     Ok(())
 }
 
-fn ensure_target_existence(target: &PathBuf) -> Result<(), Error> {
+fn ensure_target_existence(target: &Path) -> Result<(), Error> {
     if !target.exists() {
         create_dir_all(target.parent().unwrap())?;
         File::create(target)?;

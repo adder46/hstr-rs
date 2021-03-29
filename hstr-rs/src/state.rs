@@ -24,7 +24,7 @@ impl State {
         let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
             "zsh" => hstr::get_zsh_history(),
-            _ => panic!(format!("{} is not supported yet.", shell)),
+            _ => panic!("{} is not supported yet.", shell),
         };
         Self {
             case_sensitivity: false,

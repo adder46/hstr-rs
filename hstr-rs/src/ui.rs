@@ -8,7 +8,7 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
-use unicode_width::UnicodeWidthChar as _;
+use unicode_width::UnicodeWidthChar;
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
