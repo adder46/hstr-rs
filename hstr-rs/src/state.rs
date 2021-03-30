@@ -1,4 +1,4 @@
-use crate::{hstr, io, sort, ui};
+use crate::{hstr, io, sort};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use itertools::Itertools;
@@ -16,13 +16,10 @@ pub struct State {
     pub raw_history: Vec<String>,
     pub commands: Commands,
     pub to_restore: Commands,
-    pub cursor: usize,
-    pub query_char_widths: Vec<usize>,
-    pub chars_moved: usize,
 }
 
 impl State {
-    pub fn new(query: String) -> Self {
+    pub fn new(query: &str) -> Self {
         let shell = setenv::get_shell().get_name();
         let (raw_history, commands) = match shell {
             "bash" => hstr::get_bash_history(),
@@ -34,13 +31,10 @@ impl State {
             search_mode: SearchMode::Exact,
             view: View::Sorted,
             shell: shell.to_string(),
-            query_char_widths: ui::get_char_widths(&query),
-            query,
+            query: query.to_owned(),
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
-            cursor: 0,
-            chars_moved: 0,
         }
     }
 
@@ -226,7 +220,7 @@ pub mod fixtures {
 
     #[fixture]
     pub fn fake_state(fake_history: Vec<String>) -> State {
-        let mut state = State::new(String::new());
+        let mut state = State::new("");
         let fake_commands = Commands {
             all: fake_history.clone(),
             favorites: Vec::new(),
@@ -338,7 +332,7 @@ mod tests {
         case(View::All, View::Sorted)
     )]
     fn toggle_view(before: View, after: View) {
-        let mut state = State::new(String::new());
+        let mut state = State::new("");
         state.view = before;
         state.toggle_view();
         assert_eq!(state.view, after);
@@ -352,7 +346,7 @@ mod tests {
         case(SearchMode::Fuzzy, SearchMode::Exact)
     )]
     fn toggle_search_mode(before: SearchMode, after: SearchMode) {
-        let mut state = State::new(String::new());
+        let mut state = State::new("");
         state.search_mode = before;
         state.toggle_search_mode();
         assert_eq!(state.search_mode, after);
@@ -360,7 +354,7 @@ mod tests {
 
     #[rstest(case_sensitivity, case(true), case(false))]
     fn toggle_case(case_sensitivity: bool) {
-        let mut state = State::new(String::new());
+        let mut state = State::new("");
         state.case_sensitivity = case_sensitivity;
         state.toggle_case();
         assert_eq!(state.case_sensitivity, !case_sensitivity);
