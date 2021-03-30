@@ -1,4 +1,4 @@
-use crate::{hstr, io, sort};
+use crate::{hstr, io, sort, ui};
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use itertools::Itertools;
@@ -18,7 +18,7 @@ pub struct State {
     pub to_restore: Commands,
     pub cursor: usize,
     pub query_char_widths: Vec<usize>,
-    pub real_moves: usize,
+    pub chars_moved: usize,
 }
 
 impl State {
@@ -34,13 +34,13 @@ impl State {
             search_mode: SearchMode::Exact,
             view: View::Sorted,
             shell: shell.to_string(),
+            query_char_widths: ui::get_char_widths(&query),
             query,
-            query_char_widths: vec![],
             raw_history,
             commands: commands.clone(),
             to_restore: commands,
             cursor: 0,
-            real_moves: 0,
+            chars_moved: 0,
         }
     }
 

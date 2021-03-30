@@ -44,11 +44,6 @@ fn main() -> Result<(), std::io::Error> {
 
     ui::curses::init();
     state.search();
-    state.query_char_widths = state
-        .query
-        .chars()
-        .map(|ch| ch.width().unwrap_or(0))
-        .collect::<Vec<usize>>();
     state
         .query
         .clone()
@@ -110,7 +105,7 @@ fn main() -> Result<(), std::io::Error> {
                     let query_length_in_bytes = state
                         .query
                         .chars()
-                        .take(state.real_moves)
+                        .take(state.chars_moved)
                         .fold(0, |acc, x| acc + x.to_string().len());
                     state
                         .query
@@ -153,11 +148,7 @@ fn main() -> Result<(), std::io::Error> {
                     });
                     state.query = new_query_string;
                     state.commands = state.to_restore.clone();
-                    state.query_char_widths = state
-                        .query
-                        .chars()
-                        .map(|ch| ch.width().unwrap_or(0))
-                        .collect::<Vec<usize>>();
+                    state.query_char_widths = ui::get_char_widths(&state.query);
                     nc::clear();
                     state.search();
                     user_interface.populate_screen(&state);

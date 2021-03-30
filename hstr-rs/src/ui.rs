@@ -208,12 +208,17 @@ impl UserInterface {
         let char_widths = &state.query_char_widths;
         match direction {
             Direction::Backward => {
-                state.real_moves = state.real_moves.saturating_sub(1);
-                state.cursor = state.cursor.saturating_sub(
-                    *char_widths
-                        .get(state.real_moves.saturating_sub(1))
-                        .unwrap_or(&0),
-                );
+                state.chars_moved = state.chars_moved.saturating_sub(1);
+                state.cursor = get_char_widths(
+                    &state
+                        .query
+                        .chars()
+                        .take(state.chars_moved)
+                        .collect::<String>(),
+                )
+                .iter()
+                .sum();
+                dbg!(state.cursor);
                 nc::wmove(
                     nc::stdscr(),
                     0,
@@ -222,8 +227,19 @@ impl UserInterface {
             }
             Direction::Forward => {
                 if state.cursor < state.query.width() {
-                    state.real_moves += 1;
-                    state.cursor += char_widths.get(state.real_moves.saturating_sub(1)).unwrap();
+                    state.chars_moved += 1;
+                    dbg!("forward", state.chars_moved);
+                    dbg!(char_widths);
+                    state.cursor = get_char_widths(
+                        &state
+                            .query
+                            .chars()
+                            .take(state.chars_moved)
+                            .collect::<String>(),
+                    )
+                    .iter()
+                    .sum();
+                    dbg!(state.cursor);
                     nc::wmove(
                         nc::stdscr(),
                         0,
@@ -360,6 +376,13 @@ mod pp {
         let overhead = string.width() - string.chars().count();
         format!("{0:1$}", string, nc::COLS() as usize - 2 - overhead)
     }
+}
+
+pub fn get_char_widths(string: &str) -> Vec<usize> {
+    string
+        .chars()
+        .map(|ch| ch.width().unwrap_or(0))
+        .collect::<Vec<usize>>()
 }
 
 #[derive(Copy, Clone, PartialEq)]
