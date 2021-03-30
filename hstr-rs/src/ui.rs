@@ -8,7 +8,7 @@ use fake_ncurses as nc;
 #[cfg(not(test))]
 use ncurses as nc;
 
-use unicode_width::UnicodeWidthChar;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 const LABEL: &str =
     "Type to filter, UP/DOWN move, ENTER/TAB select, DEL remove, ESC quit, C-f add/rm fav";
@@ -16,13 +16,15 @@ const LABEL: &str =
 pub struct UserInterface {
     pub page: i32,
     pub selected: i32,
+    pub cursor: Cursor,
 }
 
 impl UserInterface {
-    pub fn new() -> Self {
+    pub fn new(query: &str) -> Self {
         Self {
             page: 1,
             selected: 0,
+            cursor: Cursor::new(query),
         }
     }
 
@@ -202,9 +204,86 @@ impl UserInterface {
         nc::mvaddstr(1, 1, &deletion_prompt(command));
         nc::attroff(nc::COLOR_PAIR(6));
     }
+
+    pub fn move_cursor(&mut self, state: &mut State, direction: Direction) {
+        let prompt_length = pp::get_shell_prompt().chars().count();
+        match direction {
+            Direction::Backward => {
+                self.cursor.chars_moved = self.cursor.chars_moved.saturating_sub(1);
+                self.cursor.column = get_char_widths(
+                    &state
+                        .query
+                        .chars()
+                        .take(self.cursor.chars_moved)
+                        .collect::<String>(),
+                )
+                .iter()
+                .sum();
+                nc::wmove(
+                    nc::stdscr(),
+                    0,
+                    prompt_length as i32 + 2 + self.cursor.column as i32,
+                );
+            }
+            Direction::Forward => {
+                if self.cursor.column < state.query.width() {
+                    self.cursor.chars_moved += 1;
+                    self.cursor.column = get_char_widths(
+                        &state
+                            .query
+                            .chars()
+                            .take(self.cursor.chars_moved)
+                            .collect::<String>(),
+                    )
+                    .iter()
+                    .sum();
+                    nc::wmove(
+                        nc::stdscr(),
+                        0,
+                        prompt_length as i32 + 2 + self.cursor.column as i32,
+                    );
+                }
+            }
+        }
+    }
+
+    pub fn insert_char_in_query(&self, state: &mut State, ch: char) {
+        let query_length_in_bytes = state
+            .query
+            .chars()
+            .take(self.cursor.chars_moved)
+            .fold(0, |acc, x| acc + x.to_string().len());
+        state.query.insert(query_length_in_bytes, ch);
+    }
+
+    pub fn remove_char_from_query(&self, string: &str) -> String {
+        let mut query = String::new();
+        column_indices(&string.clone()).for_each(|(colidx, _byteidx, ch)| {
+            if self.cursor.column != colidx + ch.width().unwrap_or(0) {
+                query.push(ch);
+            }
+        });
+        query
+    }
 }
 
-struct ColumnIndices<'a> {
+pub struct Cursor {
+    pub column: usize,
+    pub chars_moved: usize,
+    pub query_char_widths: Vec<usize>,
+}
+
+impl Cursor {
+    fn new(query: &str) -> Cursor {
+        Cursor {
+            column: 0,
+            chars_moved: 0,
+            query_char_widths: get_char_widths(query),
+        }
+    }
+}
+
+pub struct ColumnIndices<'a> {
     inner: std::str::CharIndices<'a>,
     next_col: usize,
 }
@@ -222,7 +301,7 @@ impl Iterator for ColumnIndices<'_> {
     }
 }
 
-fn column_indices(s: &str) -> ColumnIndices {
+pub fn column_indices(s: &str) -> ColumnIndices {
     ColumnIndices {
         inner: s.char_indices(),
         next_col: 0,
@@ -282,7 +361,7 @@ mod pp {
         format!("{} {}", get_shell_prompt(), query)
     }
 
-    fn get_shell_prompt() -> String {
+    pub fn get_shell_prompt() -> String {
         format!(
             "{}@{}$",
             env::var("USER").unwrap(),
@@ -329,6 +408,13 @@ mod pp {
         let overhead = string.width() - string.chars().count();
         format!("{0:1$}", string, nc::COLS() as usize - 2 - overhead)
     }
+}
+
+pub fn get_char_widths(string: &str) -> Vec<usize> {
+    string
+        .chars()
+        .map(|ch| ch.width().unwrap_or(0))
+        .collect::<Vec<usize>>()
 }
 
 #[derive(Copy, Clone, PartialEq)]
@@ -383,7 +469,7 @@ mod tests {
         case(5, vec![])
     )]
     fn get_page(page: i32, expected: Vec<&str>, fake_state: State) {
-        let mut user_interface = UserInterface::new();
+        let mut user_interface = UserInterface::new("");
         user_interface.page = page;
         assert_eq!(user_interface.page_contents(&fake_state), expected);
     }
@@ -402,7 +488,7 @@ mod tests {
         case(1, 4, Direction::Backward)
     )]
     fn turn_page(current: i32, expected: i32, direction: Direction, fake_state: State) {
-        let mut user_interface = UserInterface::new();
+        let mut user_interface = UserInterface::new("");
         user_interface.page = current;
         user_interface.turn_page(&fake_state, direction);
         assert_eq!(user_interface.page, expected)
@@ -417,7 +503,7 @@ mod tests {
         case("ping -c 10 www.google.com", "[0-9]+", vec![8, 9])
     )]
     fn matched_chars_indices(string: &str, substring: &str, expected: Vec<usize>) {
-        let user_interface = UserInterface::new();
+        let user_interface = UserInterface::new("");
         assert_eq!(
             user_interface.substring_indices(string, substring),
             expected
@@ -426,13 +512,13 @@ mod tests {
 
     #[rstest()]
     fn page_size(fake_state: State) {
-        let user_interface = UserInterface::new();
+        let user_interface = UserInterface::new("");
         assert_eq!(user_interface.page_size(&fake_state), 7);
     }
 
     #[rstest()]
     fn total_pages(fake_state: State) {
-        let user_interface = UserInterface::new();
+        let user_interface = UserInterface::new("");
         assert_eq!(user_interface.total_pages(&fake_state), 4);
     }
 
