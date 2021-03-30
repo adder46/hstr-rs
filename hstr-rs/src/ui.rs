@@ -246,6 +246,25 @@ impl UserInterface {
             }
         }
     }
+
+    pub fn insert_char_in_query(&self, state: &mut State, ch: char) {
+        let query_length_in_bytes = state
+            .query
+            .chars()
+            .take(self.cursor.chars_moved)
+            .fold(0, |acc, x| acc + x.to_string().len());
+        state.query.insert(query_length_in_bytes, ch);
+    }
+
+    pub fn remove_char_from_query(&self, string: &str) -> String {
+        let mut query = String::new();
+        column_indices(&string.clone()).for_each(|(colidx, _byteidx, ch)| {
+            if self.cursor.column != colidx + ch.width().unwrap_or(0) {
+                query.push(ch);
+            }
+        });
+        query
+    }
 }
 
 pub struct Cursor {

@@ -7,7 +7,6 @@ use fake_ncurses as nc;
 use ncurses as nc;
 
 use structopt::StructOpt;
-use unicode_width::UnicodeWidthChar;
 
 mod hstr;
 mod io;
@@ -102,20 +101,10 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 _ => {
-                    let query_length_in_bytes = state
-                        .query
-                        .chars()
-                        .take(user_interface.cursor.chars_moved)
-                        .fold(0, |acc, x| acc + x.to_string().len());
-                    state
-                        .query
-                        .insert(query_length_in_bytes, std::char::from_u32(ch).unwrap());
+                    user_interface
+                        .insert_char_in_query(&mut state, std::char::from_u32(ch).unwrap());
                     state.commands = state.to_restore.clone();
-                    user_interface.cursor.query_char_widths = state
-                        .query
-                        .chars()
-                        .map(|ch| ch.width().unwrap_or(0))
-                        .collect::<Vec<usize>>();
+                    user_interface.cursor.query_char_widths = ui::get_char_widths(&state.query);
                     user_interface.selected = 0;
                     user_interface.page = 1;
                     nc::clear();
@@ -140,13 +129,7 @@ fn main() -> Result<(), std::io::Error> {
                     user_interface.populate_screen(&state);
                 }
                 nc::KEY_BACKSPACE => {
-                    let mut new_query_string = String::new();
-                    ui::column_indices(&state.query.clone()).for_each(|(colidx, _byteidx, _ch)| {
-                        if user_interface.cursor.column != colidx + _ch.width().unwrap_or(0) {
-                            new_query_string.push(_ch);
-                        }
-                    });
-                    state.query = new_query_string;
+                    state.query = user_interface.remove_char_from_query(&state.query);
                     state.commands = state.to_restore.clone();
                     user_interface.cursor.query_char_widths = ui::get_char_widths(&state.query);
                     nc::clear();
